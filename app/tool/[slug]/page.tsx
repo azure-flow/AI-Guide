@@ -1,0 +1,1254 @@
+// ============================================================================
+// FILE: app/tool/[slug]/page.tsx
+// PURPOSE: Dynamic tool detail page matching reference design
+// FEATURES: Overview, Key Findings, Who is it for, Tutorials, Reviews, etc.
+// ============================================================================
+
+import React from 'react';
+import Link from 'next/link';
+import { ChevronDown, Star, ThumbsUp, ExternalLink, Search, ChevronRight, Play, Zap, Clock } from 'lucide-react';
+import { wpFetch } from '../../../lib/wpclient';
+import {
+    POST_BY_SLUG_QUERY,
+    REVIEWS_BY_POST_ID_QUERY,
+    RELATED_POSTS_QUERY,
+    NAV_MENU_POSTS_QUERY,
+    ALL_TAG_SLUGS,
+    ALL_TOOLS_QUERY,
+    LATEST_TOP_PICKS_QUERY,
+    CATEGORIES_QUERY
+} from '../../../lib/queries';
+import { notFound } from 'next/navigation';
+import PricingSection from '../../../components/PricingSection';
+import Container from '../../(components)/Container';
+import PrimaryHeader from '@/components/site-header/PrimaryHeader';
+import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
+import { getSiteBranding } from '@/lib/branding';
+import Image from 'next/image';
+import StatCard from './StatCard';
+import ReviewCard from './ReviewCard';
+import ContentSection from './ContentSection';
+import KeyFindingsSection from './KeyFindingsSection';
+import AudienceCard from './AudienceCard';
+import UserReviewsCarousel from './UserReviewsCarousel';
+import RelatedPostImage from './RelatedPostImage';
+import TwitterEmbed from './TwitterEmbed';
+import AIToolScrollSection from '../../components/AIToolScrollSection';
+import { normalizeKeyFindings } from '@/lib/normalizers';
+import SiteFooter from '@/components/SiteFooter';
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+interface ToolPageProps {
+    params: {
+        slug: string;
+    };
+}
+
+interface UserReview {
+    id: string;
+    title: string;
+    content: string;
+    featuredImage?: {
+        node: {
+            sourceUrl: string;
+            altText?: string;
+        };
+    };
+    reviewerMeta: {
+        reviewerName: string;
+        reviewerCountry: string;
+        starRating: number;
+        reviewDate: string;
+        relatedTool?: {
+            nodes: Array<{
+                databaseId: number;
+            }>;
+        } | null;
+    };
+}
+
+interface ReviewsData {
+    reviews: {
+        nodes: UserReview[];
+    };
+}
+
+interface ToolData {
+    post: {
+        id: string;
+        databaseId: number;
+        slug: string;
+        title: string;
+        content: string;
+        excerpt: string;
+        date: string;
+        featuredImage?: {
+            node: {
+                sourceUrl: string;
+                altText?: string;
+            };
+        };
+        aiToolMeta?: {
+            logo?: {
+                node: {
+                    sourceUrl: string;
+                    altText?: string;
+                };
+            };
+            overview?: string;
+            productWebsite?: string;
+            youtubeLink?: string;
+            publishedDate?: string;
+            latestUpdate?: string;
+            latestVersion?: string;
+            seller?: string;
+            discussionUrl?: string;
+            keyFindingsRaw?: string | string[];
+            whoIsItFor?: string;
+            whoisitforlogo?: Array<{
+                node: {
+                    sourceUrl: string;
+                    altText?: string;
+                };
+            }>;
+            pricing?: string;
+            tutorialvid?: string;
+            tutorialvid1?: string;
+            tutorialvid2?: string;
+            boostedProductivity?: string;
+            lessManualWork?: string;
+            overviewimage?: {
+                node: {
+                    sourceUrl: string;
+                    altText?: string;
+                };
+            };
+            thumbsup?: {
+                node: {
+                    sourceUrl: string;
+                    altText?: string;
+                };
+            };
+        };
+        uri: string;
+        tags?: {
+            nodes: Array<{
+                name: string;
+                slug: string;
+            }>;
+        };
+        categories?: {
+            nodes: Array<{
+                name: string;
+                slug: string;
+            }>;
+        };
+    };
+}
+
+const TWEET_URL_REGEX = /https?:\/\/(?:www\.)?(?:twitter|x)\.com\/[A-Za-z0-9_]+\/status\/\d+/gi;
+
+function extractTweetUrls(content?: string | null): string[] {
+    if (!content) return [];
+    const matches = content.match(TWEET_URL_REGEX);
+    if (!matches) return [];
+    return Array.from(new Set(matches));
+}
+
+// ============================================================================
+// MAIN PAGE COMPONENT
+// ============================================================================
+
+export default async function ToolDetailPage({ params }: ToolPageProps) {
+    const { slug } = params;
+
+    // Fetch tool data from WordPress
+    let data: ToolData;
+    try {
+        data = await wpFetch<ToolData>(POST_BY_SLUG_QUERY, { slug }, { revalidate: 3600 });
+        if (!data?.post) {
+            notFound();
+        }
+    } catch (error) {
+        console.error('❌ Error fetching post:', error);
+        notFound();
+    }
+
+    const { post } = data;
+
+    // Fetch related posts query params
+    const firstTag = post.tags?.nodes?.[0];
+
+    // Fetch all independent data in parallel for faster page load
+    const [allTagRes, navMenuRes, branding, reviewsData, relatedData, topPicksRes, categoriesRes] = await Promise.all([
+        wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
+        wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(NAV_MENU_POSTS_QUERY, { first: 200 }, { revalidate: 3600 }),
+        getSiteBranding(),
+        wpFetch<ReviewsData>(REVIEWS_BY_POST_ID_QUERY, { postId: post.databaseId }, { revalidate: 3600 }).catch(() => ({
+            reviews: { nodes: [] }
+        })),
+        firstTag
+            ? wpFetch<{ posts: { nodes: any[] } }>(
+                  RELATED_POSTS_QUERY,
+                  {
+                      tags: [firstTag.slug],
+                      excludeId: post.id,
+                      first: 10
+                  },
+                  { revalidate: 3600 }
+              ).catch(() => ({ posts: { nodes: [] } }))
+            : Promise.resolve({ posts: { nodes: [] } }),
+        wpFetch<{ posts: { nodes: Array<{ title: string; slug: string }> } }>(
+            LATEST_TOP_PICKS_QUERY,
+            { first: 13 },
+            { revalidate: 3600 }
+        ).catch(() => ({ posts: { nodes: [] } })),
+        wpFetch<{ categories: { nodes: Array<{ name: string; slug: string }> } }>(
+            CATEGORIES_QUERY,
+            { first: 50 },
+            { revalidate: 3600 }
+        ).catch(() => ({ categories: { nodes: [] } }))
+    ]);
+
+    const allTags = allTagRes?.tags?.nodes ?? [];
+    const navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
+    const relatedTools = relatedData?.posts?.nodes || [];
+    const topPicks = topPicksRes?.posts?.nodes ?? [];
+    const allCategories = categoriesRes?.categories?.nodes ?? [];
+
+    // Transform related tools to match AIToolScrollSection format (same as homepage)
+    const relatedToolCards = relatedTools.map((p: any) => {
+        const logoUrl = p?.aiToolMeta?.logo?.node?.sourceUrl ?? p?.featuredImage?.node?.sourceUrl ?? null;
+        return {
+            id: p.id,
+            name: p.title,
+            slug: p.slug,
+            logoUrl,
+            featuredImageUrl: p.featuredImage?.node?.sourceUrl || null,
+            excerpt: p.excerpt,
+            tags: p.tags?.nodes,
+            keyFindings: normalizeKeyFindings(p),
+            fallbackBadge: firstTag ? { name: firstTag.name, slug: firstTag.slug } : undefined,
+            ctaHref: `/tool/${p.slug}`,
+            sortDate: p?.aiToolMeta?.dateOfAiTool ?? p?.date ?? null,
+            latestVersion: p?.aiToolMeta?.latestVersion,
+            latestUpdate: p?.aiToolMeta?.latestUpdate,
+            pricing: p?.aiToolMeta?.pricing,
+            whoIsItFor: p?.aiToolMeta?.whoIsItFor
+        };
+    });
+
+    // Process reviews (already fetched in parallel above)
+    const allReviews = reviewsData?.reviews?.nodes ?? [];
+
+    // Filter reviews that match this post's ID
+    const reviews = allReviews.filter((review) => {
+        const relatedToolNodes = review.reviewerMeta?.relatedTool?.nodes;
+        const relatedToolId = relatedToolNodes?.[0]?.databaseId;
+        const matches = relatedToolId && relatedToolId === post.databaseId;
+
+        return matches;
+    });
+
+    const logoUrl = post.aiToolMeta?.logo?.node?.sourceUrl ?? post.featuredImage?.node?.sourceUrl;
+    const meta = post.aiToolMeta;
+    const category = post.categories?.nodes?.[0]?.name ?? 'Productivity';
+
+    // Parse key features from keyFindingsRaw
+    // Format: Each key feature section separated by blank lines (double newline)
+    // First line of each section is the title, subsequent lines are description
+    const parseKeyFeatures = (text: string | null | undefined): Array<{ title: string; description: string }> => {
+        if (!text || text.trim() === '') {
+            return [];
+        }
+
+        // Split by double newlines (blank lines) to separate different key features
+        const sections = text.split(/\n\s*\n/).filter((section) => section.trim() !== '');
+
+        return sections
+            .map((section) => {
+                const lines = section
+                    .split(/\r?\n/)
+                    .map((line) => line.trim())
+                    .filter((line) => line !== '');
+
+                if (lines.length === 0) {
+                    return { title: '', description: '' };
+                }
+
+                // First line is the title
+                const title = lines[0];
+
+                // Rest are description lines (join them together)
+                const description = lines.slice(1).join(' ').trim();
+
+                return { title, description };
+            })
+            .filter((item) => item.title !== ''); // Filter out empty items
+    };
+
+    const keyFindingsRawValue: string | string[] | null | undefined =
+        (meta as any)?.keyFindingsRaw ?? (meta as any)?.keyfindingsraw;
+
+    // Handle both string and array formats
+    let keyFeaturesText: string | null = null;
+    if (typeof keyFindingsRawValue === 'string') {
+        keyFeaturesText = keyFindingsRawValue;
+    } else if (Array.isArray(keyFindingsRawValue)) {
+        keyFeaturesText = keyFindingsRawValue.join('\n\n');
+    }
+
+    const keyFeatures = parseKeyFeatures(keyFeaturesText);
+
+    type AudienceBullet = {
+        title: string;
+        description?: string;
+    };
+
+    interface TargetAudienceItem {
+        title: string;
+        bulletPoints: AudienceBullet[];
+        logo?: any;
+    }
+
+    // Process target audience from WordPress Textarea field
+    // Format: Each audience section separated by double blank lines
+    // First line of each section is the title
+    // Each bullet point can have an expansion description on the next line (no blank line between)
+    // Single blank line separates bullet points
+    // Double blank line separates different audience sections
+    // Example:
+    // Students
+    // Summarize academic readings and journal articles
+    // student did blagh bkagh blah
+    //
+    // Clarify complex theories or historical concepts
+    // student cheats and cheats
+    //
+    // Generate essay outlines and argument structures
+    //
+    // Professionals
+    // Summarize academic readings and journal articles
+
+    const parseTargetAudience = (text: string | null | undefined): TargetAudienceItem[] => {
+        if (!text || text.trim() === '') {
+            return [];
+        }
+
+        // Split by double newlines (blank lines) to separate different audiences
+        const sections = text.split(/\n\s*\n/).filter((section) => section.trim() !== '');
+
+        return sections
+            .map((section) => {
+                const lines = section.split(/\r?\n/).map((line) => line.trim());
+
+                if (lines.length === 0 || lines[0] === '') {
+                    return { title: '', bulletPoints: [] };
+                }
+
+                // First line is the title
+                const title = lines[0];
+
+                // Process remaining lines for bullet points with optional expansions
+                const bulletPoints: AudienceBullet[] = [];
+                let i = 1;
+
+                while (i < lines.length) {
+                    // Skip empty lines (they separate bullet points)
+                    if (lines[i] === '') {
+                        i++;
+                        continue;
+                    }
+
+                    // Current line is a bullet point title
+                    const bulletTitle = lines[i];
+                    let description: string | undefined = undefined;
+
+                    // Check if next line exists and is not empty (it's an expansion description)
+                    if (i + 1 < lines.length && lines[i + 1] !== '') {
+                        description = lines[i + 1];
+                        i += 2; // Skip both the bullet and expansion
+                        // Skip the empty line after expansion if it exists
+                        if (i < lines.length && lines[i] === '') {
+                            i++;
+                        }
+                    } else {
+                        // No expansion, just a bullet point
+                        i++;
+                        // Skip the empty line after bullet if it exists
+                        if (i < lines.length && lines[i] === '') {
+                            i++;
+                        }
+                    }
+
+                    bulletPoints.push({
+                        title: bulletTitle,
+                        ...(description && { description })
+                    });
+                }
+
+                return { title, bulletPoints };
+            })
+            .filter((item) => item.title !== '' && item.bulletPoints.length > 0); // Filter out empty items
+    };
+
+    const targetAudienceRaw = meta?.whoIsItFor;
+    const parsedTargetAudience = parseTargetAudience(targetAudienceRaw);
+    const whoisitforlogoRaw = (meta as any)?.whoisitforlogo;
+
+    // Handle different possible structures for whoisitforlogo
+    // Since it's a single image field, we'll pass the same logo object to all cards
+    const normalizeLogo = (value: any) => {
+        if (!value) return null;
+        if (value.node) return value.node;
+        if (value.sourceUrl) return value;
+        return value;
+    };
+
+    const whoisitforlogoArray = (() => {
+        if (!whoisitforlogoRaw) return [];
+        if (Array.isArray(whoisitforlogoRaw)) {
+            return whoisitforlogoRaw.map(normalizeLogo).filter(Boolean);
+        }
+        return [normalizeLogo(whoisitforlogoRaw)].filter(Boolean);
+    })();
+
+    // Map logos to audience sections by index
+    const sharedWhoIsLogo = whoisitforlogoArray[0] ?? null;
+
+    const targetAudienceWithLogos: TargetAudienceItem[] = parsedTargetAudience.map((audience, idx) => ({
+        ...audience,
+        logo: whoisitforlogoArray[idx] ?? sharedWhoIsLogo
+    }));
+
+    // Fallback to default if no WordPress data
+    const targetAudience =
+        parsedTargetAudience.length > 0
+            ? targetAudienceWithLogos
+            : [
+                  {
+                      title: 'Students',
+                      bulletPoints: [
+                          { title: 'Summarize academic readings and journal articles' },
+                          { title: 'Clarify complex theories or historical concepts' },
+                          { title: 'Generate essay outlines and argument structures' },
+                          { title: 'Proofread and polish grammar and vocabulary' },
+                          { title: 'Practice foreign language communication' }
+                      ],
+                      logo: null
+                  },
+                  {
+                      title: 'Professionals',
+                      bulletPoints: [
+                          { title: 'Summarize academic readings and journal articles' },
+                          { title: 'Clarify complex theories or historical concepts' },
+                          { title: 'Generate essay outlines and argument structures' },
+                          { title: 'Proofread and polish grammar and vocabulary' },
+                          { title: 'Practice foreign language communication' }
+                      ],
+                      logo: null
+                  },
+                  {
+                      title: 'Entrepreneurs',
+                      bulletPoints: [
+                          { title: 'Summarize academic readings and journal articles' },
+                          { title: 'Clarify complex theories or historical concepts' },
+                          { title: 'Generate essay outlines and argument structures' },
+                          { title: 'Proofread and polish grammar and vocabulary' },
+                          { title: 'Practice foreign language communication' }
+                      ],
+                      logo: null
+                  }
+              ];
+
+    // Process pricing models from WordPress Textarea field
+    // Format: Each pricing model section separated by blank lines (double newline)
+    // First line: Pricing model name (e.g., "Free Trial")
+    // Second line: Price (e.g., "$0.00")
+    // Subsequent lines: Features (each line is a feature)
+    // Example:
+    // Free Trial
+    // $0.00
+    // 2 GB File Storage
+    // Summary Views
+    //
+    // Plus Plan
+    // $10.00
+    // 2 GB File Storage
+    // Summary Views
+
+    const parsePricingModels = (
+        text: string | null | undefined
+    ): Array<{ name: string; price: string; features: string[] }> => {
+        if (!text || text.trim() === '') {
+            return [];
+        }
+
+        // Split by double newlines (blank lines) to separate different pricing models
+        const sections = text.split(/\n\s*\n/).filter((section) => section.trim() !== '');
+
+        return sections
+            .map((section) => {
+                const lines = section
+                    .split(/\r?\n/)
+                    .map((line) => line.trim())
+                    .filter((line) => line !== '');
+
+                if (lines.length === 0) {
+                    return { name: '', price: '', features: [] };
+                }
+
+                // First line is the pricing model name
+                const name = lines[0] || '';
+
+                // Second line is the price
+                const price = lines[1] || '$0.00';
+
+                // Rest are features (remove leading dashes if present)
+                const features = lines
+                    .slice(2)
+                    .map((line) => {
+                        // Remove leading dash and whitespace if present
+                        return line.replace(/^-\s*/, '').trim();
+                    })
+                    .filter((feature) => feature !== '');
+
+                return { name, price, features };
+            })
+            .filter((item) => item.name !== ''); // Filter out empty items
+    };
+
+    const pricingRaw = meta?.pricing;
+    const parsedPricingModels = parsePricingModels(pricingRaw);
+
+    // Fallback to default if no WordPress data
+    const pricingModels =
+        parsedPricingModels.length > 0
+            ? parsedPricingModels
+            : [
+                  {
+                      name: 'Free Trial',
+                      price: '$0.00',
+                      features: [
+                          '2 GB File Storage',
+                          'Summary Views',
+                          'Backlogs',
+                          'Reports and Dashboards',
+                          'Calendar',
+                          'Timeline'
+                      ]
+                  },
+                  {
+                      name: 'Plus Plan',
+                      price: '$0.00',
+                      features: [
+                          '2 GB File Storage',
+                          'Summary Views',
+                          'Backlogs',
+                          'Reports and Dashboards',
+                          'Calendar',
+                          'Timeline'
+                      ]
+                  },
+                  {
+                      name: 'Team Plan',
+                      price: '$0.00',
+                      features: [
+                          '2 GB File Storage',
+                          'Summary Views',
+                          'Backlogs',
+                          'Reports and Dashboards',
+                          'Calendar',
+                          'Timeline'
+                      ]
+                  },
+                  {
+                      name: 'Team Plan',
+                      price: '$0.00',
+                      features: [
+                          '2 GB File Storage',
+                          'Summary Views',
+                          'Backlogs',
+                          'Reports and Dashboards',
+                          'Calendar',
+                          'Timeline'
+                      ]
+                  }
+              ];
+
+    // Related tools already fetched in parallel above
+
+    // Calculate average rating
+    const averageRating =
+        reviews.length > 0
+            ? reviews.reduce((sum, review) => sum + review.reviewerMeta.starRating, 0) / reviews.length
+            : 0;
+
+    // Calculate rating distribution (for the bar chart)
+    const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => {
+        const count = reviews.filter((r) => Math.floor(r.reviewerMeta.starRating) === rating).length;
+        return {
+            rating,
+            count,
+            percentage: reviews.length > 0 ? (count / reviews.length) * 100 : 0
+        };
+    });
+
+    const tweetEmbeds = extractTweetUrls(post.content).slice(0, 6);
+    const legacyRelatedImages: { sourceUrl: string; altText?: string }[] = [];
+
+    // Build footer sections similar to homepage
+    const collectionLinks = navGroups
+        .flatMap((group) => group.tags || [])
+        .slice(0, 8)
+        .map((tag) => ({
+            label: tag.label,
+            href: `/collection/${tag.slug}`
+        }));
+
+    const categoryLinks = allCategories
+        .filter((cat) => cat.slug !== 'uncategorized' && cat.slug !== 'blog')
+        .slice(0, 8)
+        .map((cat) => ({
+            label: cat.name,
+            href: `/collection/${cat.slug}`
+        }));
+
+    const blogTagLinks = allTags.slice(0, 8).map((tag) => ({
+        label: tag.name,
+        href: `/articles?tag=${tag.slug}`
+    }));
+
+    const blogLinks = topPicks.slice(0, 13).map((post) => ({
+        label: post.title,
+        href: `/blog/${post.slug}`
+    }));
+
+    const footerSections = [
+        {
+            title: 'Collections',
+            items:
+                collectionLinks.length > 0
+                    ? collectionLinks
+                    : [
+                          { label: 'All AI Tools', href: '/#reviews' },
+                          { label: 'Trending', href: '/#reviews' },
+                          { label: 'New Releases', href: '/#reviews' }
+                      ]
+        },
+        {
+            title: 'Blog Highlights',
+            items: blogLinks.length > 0 ? blogLinks : [{ label: 'All Articles', href: '/articles' }]
+        },
+        {
+            title: 'Topics',
+            items:
+                blogTagLinks.length > 0
+                    ? blogTagLinks
+                    : [
+                          { label: 'Guides', href: '/articles' },
+                          { label: 'Case Studies', href: '/articles' }
+                      ]
+        }
+    ];
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <PrimaryHeader
+                tags={allTags}
+                navGroups={navGroups}
+                siteName={branding.siteName}
+                siteLogo={branding.siteLogo}
+            />
+
+            {/* Breadcrumb */}
+            <div className="bg-white border-b">
+                <div className="max-w-5xl mx-auto px-6 lg:pl-24 lg:pr-8 py-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Link href="/" className="hover:text-blue-600 flex-shrink-0">
+                            {category}
+                        </Link>
+                        <span className="flex-shrink-0">/</span>
+                        <span className="text-gray-900 font-medium truncate">{post.title}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <main>
+                {/* Strip 1: Hero & Overview - Light Background */}
+                <section className="bg-gray-50 py-6">
+                    <div className="max-w-6xl mx-auto px-6 lg:pl-24 lg:pr-8">
+                        {/* Main Grid: Left (Logo/Title/Overview) + Right (Image) */}
+                        <div className="grid grid-cols-12 gap-3 items-start">
+                            {/* Left Column: Logo, Title, Overview, Tags */}
+                            <div className="col-span-7">
+                                {/* Logo, Title, and Visit Website Button */}
+                                <div className="flex items-start gap-4 mb-6">
+                                    {/* Logo */}
+                                    <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                        {logoUrl ? (
+                                            <img
+                                                src={logoUrl}
+                                                alt={post.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 border-4 border-white rounded-full"></div>
+                                        )}
+                                    </div>
+
+                                    {/* Title and Description */}
+                                    <div>
+                                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 break-words">
+                                            {post.title}
+                                        </h1>
+                                        {meta?.seller && <p className="text-sm text-gray-600 mb-3">{meta.seller}</p>}
+
+                                        {/* Visit Website Button */}
+                                        {meta?.productWebsite && (
+                                            <a
+                                                href={meta.productWebsite}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-xs"
+                                            >
+                                                Visit Website
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Overview Section */}
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900 mb-3">Overview</h2>
+                                    {meta?.overview ? (
+                                        <div
+                                            className="prose max-w-none text-gray-600 text-xs leading-relaxed mb-4"
+                                            dangerouslySetInnerHTML={{ __html: meta.overview }}
+                                        />
+                                    ) : post.excerpt ? (
+                                        <div
+                                            className="prose max-w-none text-gray-600 text-xs leading-relaxed mb-4"
+                                            dangerouslySetInnerHTML={{ __html: post.excerpt }}
+                                        />
+                                    ) : (
+                                        <p className="text-gray-600 text-xs leading-relaxed mb-4">
+                                            AI assistant chatbot that delivers accurate answers, generates high-quality
+                                            content, and automates various tasks.
+                                        </p>
+                                    )}
+
+                                    {/* Tags */}
+                                    {post.tags?.nodes && post.tags.nodes.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {post.tags.nodes.slice(0, 3).map((tag, idx) => (
+                                                <span
+                                                    key={tag.slug}
+                                                    className={`px-2.5 py-1 rounded text-xs font-medium ${
+                                                        idx === 0
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : idx === 1
+                                                            ? 'bg-purple-100 text-purple-700'
+                                                            : 'bg-cyan-100 text-cyan-700'
+                                                    }`}
+                                                >
+                                                    {tag.name}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right Column: Product Image (spans full height) */}
+                            <div className="col-span-5">
+                                {meta?.overviewimage?.node?.sourceUrl || post.featuredImage?.node?.sourceUrl ? (
+                                    <Image
+                                        src={
+                                            meta?.overviewimage?.node?.sourceUrl ||
+                                            post.featuredImage?.node?.sourceUrl ||
+                                            ''
+                                        }
+                                        alt={
+                                            meta?.overviewimage?.node?.altText ||
+                                            post.featuredImage?.node?.altText ||
+                                            post.title
+                                        }
+                                        width={500}
+                                        height={400}
+                                        className="w-full rounded-lg shadow-lg border border-gray-200 object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-[350px] rounded-lg shadow-lg border border-gray-200 bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+                                        <div className="text-center">
+                                            <div className="text-7xl mb-4">🤖</div>
+                                            <p className="text-gray-500 text-sm">AI Tool</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Strip 2: Reviews & Content - White Background */}
+                <section className="bg-white py-6">
+                    <div className="max-w-6xl mx-auto px-6 lg:pl-24 lg:pr-8">
+                        {/* User Reviews */}
+                        {reviews.length > 0 && (
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900 mb-4">User Reviews</h2>
+                                <UserReviewsCarousel reviews={reviews} />
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </main>
+
+            {/* Main Content */}
+            <div className="max-w-6xl mx-auto px-6 lg:pl-24 lg:pr-8 py-8 bg-gray-50">
+                <div className="relative">
+                    {/* Left Column - Page Navigation - Absolutely positioned */}
+                    <div className="hidden lg:block w-48 absolute left-0 top-0 z-10 pointer-events-none">
+                        <div className="sticky top-24 z-10 self-start pl-6 pr-6 py-2 bg-gray-50 pointer-events-auto">
+                            <nav className="space-y-1">
+                                <a
+                                    href="#what-is"
+                                    className="block text-blue-600 font-medium border-b-2 border-blue-600 pb-2 text-sm"
+                                >
+                                    What is {post.title}
+                                </a>
+                                <a
+                                    href="#key-findings"
+                                    className="block text-gray-700 hover:text-blue-600 py-2 text-sm"
+                                >
+                                    Key Feature
+                                </a>
+                                <a
+                                    href="#who-is-it-for"
+                                    className="block text-gray-700 hover:text-blue-600 py-2 text-sm"
+                                >
+                                    Who is it for
+                                </a>
+                                <a href="#tutorials" className="block text-gray-700 hover:text-blue-600 py-2 text-sm">
+                                    Tutorials
+                                </a>
+                                <a href="#pricing" className="block text-gray-700 hover:text-blue-600 py-2 text-sm">
+                                    Pricing
+                                </a>
+                                <a href="#review" className="block text-gray-700 hover:text-blue-600 py-2 text-sm">
+                                    Review
+                                </a>
+                                <a
+                                    href="#related-posts"
+                                    className="block text-gray-700 hover:text-blue-600 py-2 text-sm"
+                                >
+                                    Related Posts
+                                </a>
+                                <a
+                                    href="#alternatives"
+                                    className="block text-gray-700 hover:text-blue-600 py-2 text-sm"
+                                >
+                                    Alternatives
+                                </a>
+                            </nav>
+                        </div>
+                    </div>
+
+                    {/* Center Column - Main Content - Starts after navigation with proper spacing */}
+                    <div className="flex items-start gap-0 lg:pl-48">
+                        <div className="flex-1 min-w-0 space-y-6 pr-0 lg:pr-6">
+                            {/* Top Row: Video + Productivity Cards (same height) */}
+                            <div className="grid grid-cols-12 gap-6 items-stretch">
+                                {/* Product Video - Left Column */}
+                                <div className="col-span-8 relative z-0">
+                                    {meta?.youtubeLink && (
+                                        <div
+                                            className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video relative z-0"
+                                            dangerouslySetInnerHTML={{ __html: meta.youtubeLink }}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Productivity Cards - Right Column (matches video height) */}
+                                <div className="col-span-4 flex">
+                                    {(meta?.boostedProductivity || meta?.lessManualWork) && (
+                                        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full h-full flex flex-col">
+                                            {meta?.boostedProductivity && (
+                                                <div className="mb-4 pb-4 border-b border-gray-200 flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Zap className="w-4 h-4 text-yellow-500" />
+                                                        <h3 className="text-sm text-gray-900">Boosted Productivity</h3>
+                                                    </div>
+                                                    <p className="text-base text-gray-900">
+                                                        {meta.boostedProductivity}
+                                                    </p>
+                                                    <button className="text-blue-600 hover:underline text-xs mt-2 flex items-center gap-1">
+                                                        Show More <ChevronDown className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {meta?.lessManualWork && (
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Clock className="w-4 h-4 text-gray-600" />
+                                                        <h3 className="text-sm text-gray-900">Less Manual Work</h3>
+                                                    </div>
+                                                    <p className="text-base text-gray-900">{meta.lessManualWork}</p>
+                                                    <button className="text-blue-600 hover:underline text-xs mt-2 flex items-center gap-1">
+                                                        Show More <ChevronDown className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Bottom Row: What is Gemini + Product Info (aligned) */}
+                            <div className="grid grid-cols-12 gap-6">
+                                {/* What is ChatGPT Section - Left Column - Aligned with navigation left edge */}
+                                <div className="col-span-8 lg:-ml-48">
+                                    <ContentSection
+                                        id="what-is"
+                                        title={`What is ${post.title}`}
+                                        content={post.content}
+                                    />
+                                </div>
+
+                                {/* Product Info Card - Right Column - Aligned with What is Gemini */}
+                                <div className="col-span-4">
+                                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                                        <div className="space-y-2.5 text-xs">
+                                            {meta?.publishedDate && (
+                                                <InfoRow label="Published" value={meta.publishedDate} />
+                                            )}
+                                            {meta?.latestUpdate && (
+                                                <InfoRow label="Latest Update" value={meta.latestUpdate} />
+                                            )}
+                                            {meta?.latestVersion && (
+                                                <InfoRow label="Latest Version" value={meta.latestVersion} />
+                                            )}
+                                            {meta?.productWebsite && (
+                                                <InfoRow
+                                                    label="Product Website"
+                                                    value={meta.seller || 'Gemini'}
+                                                    link={meta.productWebsite}
+                                                />
+                                            )}
+                                            {meta?.seller && (
+                                                <InfoRow
+                                                    label="Seller"
+                                                    value={meta.seller}
+                                                    link={meta.productWebsite}
+                                                />
+                                            )}
+                                            {meta?.discussionUrl && (
+                                                <InfoRow
+                                                    label="Discussions"
+                                                    value="Community"
+                                                    link={meta.discussionUrl}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Key Findings Section - Spans full width from What is Gemini left edge to Product Info right edge */}
+                            <div className="grid grid-cols-12 gap-6">
+                                <div className="col-span-12 lg:-ml-48">
+                                    <KeyFindingsSection
+                                        keyFeatures={keyFeatures}
+                                        thumbsupUrl={meta?.thumbsup?.node?.sourceUrl}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Who is it for Section - Same width as Key Findings */}
+                            <div className="grid grid-cols-12 gap-6">
+                                <div className="col-span-12 lg:-ml-48">
+                                    <section
+                                        id="who-is-it-for"
+                                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+                                    >
+                                        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
+                                            Who is it for
+                                        </h2>
+                                        <div className="grid grid-cols-3 gap-6">
+                                            {targetAudience.map((audience, idx) => (
+                                                <AudienceCard
+                                                    key={idx}
+                                                    title={audience.title}
+                                                    bulletPoints={audience.bulletPoints}
+                                                    logo={audience.logo}
+                                                    whoisitforlogo={sharedWhoIsLogo}
+                                                    logoIndex={idx}
+                                                />
+                                            ))}
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+
+                            {/* Pricing Section - Same width as Who is it for */}
+                            <div className="grid grid-cols-12 gap-6">
+                                <div className="col-span-12 lg:-ml-48">
+                                    <PricingSection pricingModels={pricingModels} />
+                                </div>
+                            </div>
+
+                            {/* Tutorials Section - Same width as Pricing */}
+                            <div className="grid grid-cols-12 gap-6">
+                                <div className="col-span-12 lg:-ml-48">
+                                    <section
+                                        id="tutorials"
+                                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+                                    >
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Tutorials</h2>
+                                        <div className="grid grid-cols-3 gap-6">
+                                            {meta?.tutorialvid && (
+                                                <div
+                                                    className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
+                                                    dangerouslySetInnerHTML={{ __html: meta.tutorialvid }}
+                                                />
+                                            )}
+                                            {meta?.tutorialvid1 && (
+                                                <div
+                                                    className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
+                                                    dangerouslySetInnerHTML={{ __html: meta.tutorialvid1 }}
+                                                />
+                                            )}
+                                            {meta?.tutorialvid2 && (
+                                                <div
+                                                    className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
+                                                    dangerouslySetInnerHTML={{ __html: meta.tutorialvid2 }}
+                                                />
+                                            )}
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+
+                            {/* Use Case Section - Same width as other sections */}
+                            <div className="grid grid-cols-12 gap-6">
+                                <div className="col-span-12 lg:-ml-48">
+                                    <section
+                                        id="use-case"
+                                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+                                    >
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Use Case</h2>
+                                        <div className="prose max-w-none">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                                                1. The Power of Clear Communication
+                                            </h3>
+                                            <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                                                ChatGPT's effectiveness depends less on its hidden algorithms and more
+                                                on how precisely users communicate with it. A prompt is not merely a
+                                                question, it's a structured instruction defining context, role, and
+                                                outcome. When your message is clear and intentional, the model delivers
+                                                answers that are more accurate, coherent, and contextually relevant.
+                                            </p>
+                                            <button className="text-blue-600 font-semibold text-sm flex items-center gap-1">
+                                                Show More <ChevronDown className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+
+                            {/* Review and Related Posts Side by Side */}
+                            <div className="grid grid-cols-12 gap-6 items-stretch">
+                                {/* Left Column - Review Section (Thinner) */}
+                                <div className="col-span-12 lg:-ml-48 flex">
+                                    <section
+                                        id="review"
+                                        className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full flex flex-col"
+                                    >
+                                        <h2 className="text-xl font-bold text-gray-900 mb-4">{post.title} Review</h2>
+                                        {/* Rating Display */}
+                                        {reviews.length > 0 ? (
+                                            <>
+                                                {/* Rating Card */}
+                                                <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3 flex-shrink-0">
+                                                    <div className="text-4xl font-bold text-gray-900 mb-1">
+                                                        {averageRating.toFixed(1)}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 mb-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`w-4 h-4 ${
+                                                                    star <= Math.round(averageRating)
+                                                                        ? 'fill-yellow-400 text-yellow-400'
+                                                                        : 'fill-gray-200 text-gray-200'
+                                                                }`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-gray-600 text-xs">
+                                                        {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
+                                                    </p>
+                                                </div>
+
+                                                {/* Rating Breakdown */}
+                                                <div className="space-y-1.5 mb-3 flex-shrink-0">
+                                                    {ratingDistribution.map((dist) => (
+                                                        <div key={dist.rating} className="flex items-center gap-1.5">
+                                                            <span className="text-xs text-gray-600 w-4">
+                                                                {dist.rating}
+                                                            </span>
+                                                            <Star className="w-3 h-3 fill-gray-300 text-gray-300" />
+                                                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-blue-600"
+                                                                    style={{ width: `${dist.percentage}%` }}
+                                                                />
+                                                            </div>
+                                                            <span className="text-[10px] text-gray-500 w-6 text-right">
+                                                                {dist.count}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <Link
+                                                    href={`https://aitoolsite1020-vqchs.wpcomstaging.com/ai-tool-review/?tool=${
+                                                        post.slug
+                                                    }&toolName=${encodeURIComponent(post.title)}`}
+                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors mb-3 text-xs w-full flex-shrink-0 text-center"
+                                                >
+                                                    Leave a Review
+                                                </Link>
+
+                                                {/* Fixed List of Reviews (4 reviews) */}
+                                                <div className="space-y-2 flex-1">
+                                                    {reviews.slice(0, 4).map((review) => (
+                                                        <ReviewCard key={review.id} review={review} variant="compact" />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-center py-6 flex-1 flex flex-col justify-center">
+                                                <p className="text-gray-500 mb-3 text-sm">
+                                                    No reviews yet. Be the first to review!
+                                                </p>
+                                                <Link
+                                                    href={`https://aitoolsite1020-vqchs.wpcomstaging.com/ai-tool-review/?tool=${
+                                                        post.slug
+                                                    }&toolName=${encodeURIComponent(post.title)}`}
+                                                    className="inline-flex justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-xs"
+                                                >
+                                                    Leave a Review
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </section>
+                                </div>
+                            </div>
+
+                            {/* Alternatives Section - Same width as other sections */}
+                            <div className="grid grid-cols-12 gap-6">
+                                <div className="col-span-12 lg:-ml-48">
+                                    <section
+                                        id="alternatives"
+                                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+                                    >
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Alternatives</h2>
+                                        {relatedToolCards.length > 0 ? (
+                                            <AIToolScrollSection cards={relatedToolCards} cardVariant="compact" />
+                                        ) : (
+                                            <p className="text-gray-500 text-sm">
+                                                No alternatives found. Make sure this tool has tags assigned in
+                                                WordPress.
+                                            </p>
+                                        )}
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <SiteFooter sections={footerSections} />
+        </div>
+    );
+}
+
+// ============================================================================
+// HELPER COMPONENTS
+// ============================================================================
+
+function TabLink({ href, children, active = false }: { href: string; children: React.ReactNode; active?: boolean }) {
+    return (
+        <a
+            href={href}
+            className={`py-4 px-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                active
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            }`}
+        >
+            {children}
+        </a>
+    );
+}
+
+function InfoRow({ label, value, link }: { label: string; value: string; link?: string }) {
+    return (
+        <div className="flex justify-between items-start border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
+            <span className="text-gray-600 text-xs">{label}</span>
+            {link ? (
+                <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline font-medium text-xs"
+                >
+                    {value}
+                </a>
+            ) : (
+                <span className="text-gray-900 font-medium text-xs">{value}</span>
+            )}
+        </div>
+    );
+}
+
+// ============================================================================
+// ISR CONFIGURATION
+// ============================================================================
+
+export const revalidate = 3600;
+export const dynamicParams = true; // Allow dynamic params beyond static generation
+
+// ============================================================================
+// GENERATE STATIC PARAMS (Optional - for static generation of known tools)
+// ============================================================================
+
+export async function generateStaticParams() {
+    // Pre-generate all tool detail pages at build time for instant loading
+    try {
+        const toolsData = await wpFetch<{ posts: { nodes: Array<{ slug: string }> } }>(
+            ALL_TOOLS_QUERY,
+            { first: 200 },
+            { revalidate: 3600 }
+        );
+
+        const tools = toolsData?.posts?.nodes ?? [];
+
+        // Generate static pages for all tools
+        return tools.map((tool) => ({
+            slug: tool.slug
+        }));
+    } catch (error) {
+        console.error('Error in generateStaticParams:', error);
+        return [];
+    }
+}
