@@ -246,11 +246,8 @@ export default function BlogScrollSection({ posts }: BlogScrollSectionProps) {
               </button>
 
               <div className="flex items-center gap-3">
-                {posts.slice(0, 5).map((_, index) => {
-                  const isActive =
-                    posts.length <= 5
-                      ? index === currentIndex
-                      : index === Math.min(currentIndex, 4);
+                {posts.map((_, index) => {
+                  const isActive = index === currentIndex;
 
                   return (
                   <button
