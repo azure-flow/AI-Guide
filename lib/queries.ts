@@ -13,6 +13,52 @@ export const GENERAL_SETTINGS_QUERY = `
   }
 `;
 
+// Footer Settings - Get taxonomy terms for footer labels
+// Query terms from footer_setting taxonomy by slug
+// The taxonomy name is footer_setting and it's attached to pages
+// footerSetting is singular (single term), footerSettings is plural (collection)
+export const FOOTER_SETTINGS_QUERY = `
+  query FooterSettings {
+    footerSettings(where: { slug: ["collection", "blog_highlights", "topics"] }) {
+      nodes {
+        id
+        name
+        slug
+      }
+    }
+  }
+`;
+
+// Alternative: Query all footerSettings terms (in case slugIn doesn't work)
+export const FOOTER_SETTINGS_ALL_QUERY = `
+  query FooterSettingsAll {
+    footerSettings(first: 10) {
+      nodes {
+        id
+        name
+        slug
+      }
+    }
+  }
+`;
+
+// Alternative: Query page by URI and get its taxonomy terms
+// If the taxonomy is attached to a page, query the page and get footer_setting terms
+export const FOOTER_SETTINGS_PAGE_QUERY = `
+  query FooterSettingsPage {
+    page(id: "footer_setting", idType: URI) {
+      id
+      footer_setting {
+        nodes {
+          id
+          name
+          slug
+        }
+      }
+    }
+  }
+`;
+
 // Site Logo and Name from sitelogo CPT
 // Fields are in the "homepage" field group
 // Fetch all to filter out megaphone post
@@ -67,7 +113,7 @@ export const CATEGORIES_QUERY = `
 // タグ（最大6件）
 export const TAGS_QUERY = `
   query GetTags($first: Int = 6) {
-    tags(first: $first, where: { orderby: NAME, order: ASC }) {
+    tags(first: $first, where: { orderby: COUNT, order: DESC }) {
       nodes { id name slug count }
     }
   }
@@ -75,38 +121,35 @@ export const TAGS_QUERY = `
 
 // すべてのタグ（サジェスト用）
 export const ALL_TAG_SLUGS = /* GraphQL */ `
-  query ALL_TAG_SLUGS($first: Int = 500) {
-    tags(first: $first) {
-      nodes {
-        name
-        slug
-      }
+    query ALL_TAG_SLUGS($first: Int = 500) {
+        tags(first: $first) {
+            nodes {
+                name
+                slug
+            }
+        }
     }
-  }
 `;
 
 export const NAV_MENU_POSTS_QUERY = /* GraphQL */ `
-  query NavMenuPosts($first: Int = 200) {
-    posts(
-      first: $first
-      where: { categoryName: "ai-review", status: PUBLISH }
-    ) {
-      nodes {
-        id
-        slug
-        tags {
-          nodes {
-            name
-            slug
-          }
+    query NavMenuPosts($first: Int = 200) {
+        posts(first: $first, where: { categoryName: "ai-review", status: PUBLISH }) {
+            nodes {
+                id
+                slug
+                tags {
+                    nodes {
+                        name
+                        slug
+                    }
+                }
+                aiToolMeta {
+                    megamenulabel
+                    megamenugroup
+                }
+            }
         }
-        aiToolMeta {
-          megamenulabel
-          megamenugroup
-        }
-      }
     }
-  }
 `;
 
 // Single tag by slug (for collection/category pages)
@@ -302,125 +345,130 @@ export const RELATED_POSTS_QUERY = `
 
 // Blogカテゴリ＋タグ一致（最大3件）
 export const RELATED_BLOG_POSTS_BY_TAGS = /* GraphQL */ `
-  query RELATED_BLOG_POSTS_BY_TAGS($tagSlugs: [String], $excludeId: ID!, $first: Int = 3) {
-    posts(
-      where: {
-        categoryName: "blog"
-        tagSlugIn: $tagSlugs
-        notIn: [$excludeId]
-        status: PUBLISH
-      }
-      first: $first
-    ) {
-      nodes {
-        id
-        title
-        slug
-        excerpt
-        featuredImage { node { sourceUrl } }
-        tags { nodes { name slug } }
-        author {
-          node {
-            name
-          }
-        }
-        blog {
-          topPickImage {
-            node {
-              sourceUrl
+    query RELATED_BLOG_POSTS_BY_TAGS($tagSlugs: [String], $excludeId: ID!, $first: Int = 3) {
+        posts(
+            where: { categoryName: "blog", tagSlugIn: $tagSlugs, notIn: [$excludeId], status: PUBLISH }
+            first: $first
+        ) {
+            nodes {
+                id
+                title
+                slug
+                excerpt
+                featuredImage {
+                    node {
+                        sourceUrl
+                    }
+                }
+                tags {
+                    nodes {
+                        name
+                        slug
+                    }
+                }
+                author {
+                    node {
+                        name
+                    }
+                }
+                blog {
+                    topPickImage {
+                        node {
+                            sourceUrl
+                        }
+                    }
+                    authorIcon {
+                        node {
+                            sourceUrl
+                        }
+                    }
+                }
             }
-          }
-          authorIcon {
-            node {
-              sourceUrl
-            }
-          }
         }
-      }
     }
-  }
 `;
 
 // Blogの最近記事で補完
 export const RECENT_BLOG_POSTS = /* GraphQL */ `
-  query RECENT_BLOG_POSTS($excludeId: ID!, $first: Int = 3) {
-    posts(
-      where: {
-        categoryName: "blog"
-        notIn: [$excludeId]
-        status: PUBLISH
-        orderby: { field: DATE, order: DESC }
-      }
-      first: $first
-    ) {
-      nodes {
-        id
-        title
-        slug
-        excerpt
-        featuredImage { node { sourceUrl } }
-        tags { nodes { name slug } }
-        author {
-          node {
-            name
-          }
-        }
-        blog {
-          topPickImage {
-            node {
-              sourceUrl
+    query RECENT_BLOG_POSTS($excludeId: ID!, $first: Int = 3) {
+        posts(
+            where: { categoryName: "blog", notIn: [$excludeId], status: PUBLISH, orderby: { field: DATE, order: DESC } }
+            first: $first
+        ) {
+            nodes {
+                id
+                title
+                slug
+                excerpt
+                featuredImage {
+                    node {
+                        sourceUrl
+                    }
+                }
+                tags {
+                    nodes {
+                        name
+                        slug
+                    }
+                }
+                author {
+                    node {
+                        name
+                    }
+                }
+                blog {
+                    topPickImage {
+                        node {
+                            sourceUrl
+                        }
+                    }
+                    authorIcon {
+                        node {
+                            sourceUrl
+                        }
+                    }
+                }
             }
-          }
-          authorIcon {
-            node {
-              sourceUrl
-            }
-          }
         }
-      }
     }
-  }
 `;
 
 // lib/queries.ts
 // Query for Frequently Asked Questions from the freqquestions CPT
 export const FAQS_QUERY = /* GraphQL */ `
-  query FAQs($first: Int = 50) {
-    freqquestions(
-      first: $first
-      where: { orderby: [{ field: MENU_ORDER, order: ASC }, { field: DATE, order: DESC }] }
-    ) {
-      nodes {
-        id
-        title
-        content
-      }
+    query FAQs($first: Int = 50) {
+        freqquestions(
+            first: $first
+            where: { orderby: [{ field: MENU_ORDER, order: ASC }, { field: DATE, order: DESC }] }
+        ) {
+            nodes {
+                id
+                title
+                content
+            }
+        }
     }
-  }
 `;
 
 // Testimonials/Reviews query for site testimonials (not tool reviews)
 export const TESTIMONIALS_QUERY = /* GraphQL */ `
-  query Testimonials($first: Int = 20) {
-    testimonials(
-      first: $first
-      where: { orderby: { field: DATE, order: DESC } }
-    ) {
-      nodes {
-        id
-        title
-        siteReview {
-          reviewtext
-          profileimg {
-            node {
-              sourceUrl
-              altText
+    query Testimonials($first: Int = 20) {
+        testimonials(first: $first, where: { orderby: { field: DATE, order: DESC } }) {
+            nodes {
+                id
+                title
+                siteReview {
+                    reviewtext
+                    profileimg {
+                        node {
+                            sourceUrl
+                            altText
+                        }
+                    }
+                }
             }
-          }
         }
-      }
     }
-  }
 `;
 
 // Tools by modified date (for use in page.tsx)
@@ -438,6 +486,36 @@ export const TOOLS_BY_MODIFIED_QUERY = `
         featuredImage { node { sourceUrl } }
         aiToolMeta {
           logo { node { sourceUrl } }
+          keyFindingsRaw
+          dateOfAiTool
+          latestVersion
+          latestUpdate
+          pricing
+          whoIsItFor
+        }
+        tags { nodes { name slug } }
+      }
+    }
+  }
+`;
+
+// Tools by date ASC (for "new" collection page - oldest first)
+// Only show posts from category "ai-review"
+export const TOOLS_BY_DATE_DESC_QUERY = `
+  query ToolsByDateDesc {
+    posts(first: 30, where: { categoryName: "ai-review", orderby: { field: DATE, order: DESC } }) {
+      nodes {
+        id
+        databaseId
+        date
+        title
+        slug
+        excerpt
+        featuredImage { node { sourceUrl } }
+        aiToolMeta {
+          logo {
+            node { sourceUrl altText }
+          }
           keyFindingsRaw
           dateOfAiTool
           latestVersion

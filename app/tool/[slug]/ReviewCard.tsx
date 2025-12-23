@@ -57,13 +57,13 @@ export default function ReviewCard({ review, variant = 'default' }: ReviewCardPr
               className="rounded-full"
             />
           ) : (
-            <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-medium text-[9px]">
+            <div className="w-6 h-6 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-medium text-[11px]">
               {review.reviewerMeta.reviewerName.charAt(0).toUpperCase()}
             </div>
           )}
           <div>
-            <p className="font-semibold text-[10px] text-gray-900 leading-tight">{review.reviewerMeta.reviewerName}</p>
-            <p className="text-[8px] text-gray-500 leading-tight">{review.reviewerMeta.reviewerCountry}</p>
+            <p className="font-semibold text-[12px] text-gray-900 leading-tight">{review.reviewerMeta.reviewerName}</p>
+            <p className="text-[10px] text-gray-500 leading-tight">{review.reviewerMeta.reviewerCountry}</p>
           </div>
         </div>
 
@@ -75,12 +75,12 @@ export default function ReviewCard({ review, variant = 'default' }: ReviewCardPr
               fill={i < review.reviewerMeta.starRating ? 'currentColor' : 'none'}
             />
           ))}
-          <span className="text-[8px] font-medium text-gray-700 ml-0.5">
+          <span className="text-[9px] font-medium text-gray-700 ml-0.5">
             {review.reviewerMeta.starRating.toFixed(1)} / 5.0
           </span>
         </div>
 
-        <p className="text-[8px] text-gray-500 mb-1 leading-tight">
+        <p className="text-[9px] text-gray-500 mb-1 leading-tight">
           Reviewed on {new Date(review.reviewerMeta.reviewDate).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -88,7 +88,7 @@ export default function ReviewCard({ review, variant = 'default' }: ReviewCardPr
           })}
         </p>
 
-        <h3 className="font-semibold text-[10px] text-gray-900 mb-0.5 leading-tight">{review.title}</h3>
+        <h3 className="font-semibold text-[12px] text-gray-900 mb-0.5 leading-tight">{review.title}</h3>
 
         <div
           style={{
@@ -98,7 +98,7 @@ export default function ReviewCard({ review, variant = 'default' }: ReviewCardPr
             overflow: 'hidden',
             lineHeight: '1.3',
           }}
-          className="text-[9px] text-gray-700"
+          className="text-[11px] text-gray-700"
           dangerouslySetInnerHTML={{ __html: review.content || 'No review content available.' }}
         />
 

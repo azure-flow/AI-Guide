@@ -9,7 +9,7 @@ import {
   ALL_TOOLS_QUERY,
 } from "../lib/queries";
 import { buildNavGroups, NavMenuPostNode } from "@/lib/nav-groups";
-import { getSiteBranding, type SiteBranding } from "@/lib/branding";
+import { getSiteBranding, getFooterLabels, type SiteBranding, FooterLabels } from "@/lib/branding";
 
 export default async function NotFound() {
   // Fetch header data (same as homepage)
@@ -20,9 +20,14 @@ export default async function NotFound() {
     siteLogo: null,
   };
   let searchTools: Array<{ title: string; slug: string }> = [];
+  let footerLabels: FooterLabels = {
+    collections: "Collections",
+    blogHighlights: "Blog Highlights",
+    topics: "Topics"
+  };
 
   try {
-    const [allTagRes, navMenuRes, brandingData, allToolsData] = await Promise.all([
+    let [allTagRes, navMenuRes, brandingData, allToolsData, footerLabelsData] = await Promise.all([
       wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(
         ALL_TAG_SLUGS,
         {},
@@ -39,11 +44,17 @@ export default async function NotFound() {
         { first: 200 },
         { revalidate: 3600 }
       ).catch(() => ({ posts: { nodes: [] } })),
+      getFooterLabels().catch(() => ({
+        collections: "Collections",
+        blogHighlights: "Blog Highlights",
+        topics: "Topics"
+      }))
     ]);
 
     allTags = allTagRes?.tags?.nodes ?? [];
     navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
     branding = brandingData;
+    footerLabels = footerLabelsData;
     const allTools = allToolsData?.posts?.nodes ?? [];
     searchTools = allTools.map((t: any) => ({
       title: t.title as string,
@@ -136,7 +147,7 @@ export default async function NotFound() {
       <SiteFooter
         sections={[
           {
-            title: "Collections",
+            title: footerLabels.collections,
             items: [
               { label: "All AI Tools", href: "/#reviews" },
               { label: "Trending", href: "/#reviews" },
@@ -144,11 +155,11 @@ export default async function NotFound() {
             ],
           },
           {
-            title: "Blog Highlights",
+            title: footerLabels.blogHighlights,
             items: [{ label: "All Articles", href: "/articles" }],
           },
           {
-            title: "Topics",
+            title: footerLabels.topics,
             items: [
               { label: "Guides", href: "/articles" },
               { label: "Case Studies", href: "/articles" },

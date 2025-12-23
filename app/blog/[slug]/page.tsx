@@ -28,7 +28,7 @@ import TableOfContents from '@/components/TableOfContents';
 import { addAnchorsAndExtractHeadings } from '@/lib/toc';
 import PrimaryHeader from '@/components/site-header/PrimaryHeader';
 import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
-import { getSiteBranding } from '@/lib/branding';
+import { getSiteBranding, getFooterLabels } from '@/lib/branding';
 import SiteFooter from '@/components/SiteFooter';
 
 // ============================================================================
@@ -152,7 +152,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
     // Fetch all data in parallel for faster loading
     const tagSlugs = post.tags?.nodes?.map((t) => t.slug) ?? [];
 
-    const [relatedData, allTagRes, navTagsRes, navMenuRes, branding, topPicksRes, categoriesRes] = await Promise.all([
+    const [relatedData, allTagRes, navTagsRes, navMenuRes, branding, topPicksRes, categoriesRes, footerLabels] = await Promise.all([
         tagSlugs.length > 0
             ? wpFetch<{ posts: { nodes: any[] } }>(
                   RELATED_POSTS_QUERY,
@@ -177,7 +177,8 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
             CATEGORIES_QUERY,
             { first: 50 },
             { revalidate: 3600 }
-        ).catch(() => ({ categories: { nodes: [] } }))
+        ).catch(() => ({ categories: { nodes: [] } })),
+        getFooterLabels()
     ]);
 
     const relatedPosts = relatedData?.posts?.nodes ?? [];
@@ -446,7 +447,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
 
                 const footerSections = [
                     {
-                        title: 'Collections',
+                        title: footerLabels.collections,
                         items:
                             collectionLinks.length > 0
                                 ? collectionLinks
@@ -457,11 +458,11 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
                                   ]
                     },
                     {
-                        title: 'Blog Highlights',
+                        title: footerLabels.blogHighlights,
                         items: blogLinks.length > 0 ? blogLinks : [{ label: 'All Articles', href: '/articles' }]
                     },
                     {
-                        title: 'Topics',
+                        title: footerLabels.topics,
                         items:
                             blogTagLinks.length > 0
                                 ? blogTagLinks

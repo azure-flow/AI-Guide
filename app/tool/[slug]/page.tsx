@@ -23,7 +23,7 @@ import PricingSection from '../../../components/PricingSection';
 import Container from '../../(components)/Container';
 import PrimaryHeader from '@/components/site-header/PrimaryHeader';
 import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
-import { getSiteBranding } from '@/lib/branding';
+import { getSiteBranding, getFooterLabels } from '@/lib/branding';
 import Image from 'next/image';
 import StatCard from './StatCard';
 import ReviewCard from './ReviewCard';
@@ -183,7 +183,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
     const firstTag = post.tags?.nodes?.[0];
 
     // Fetch all independent data in parallel for faster page load
-    const [allTagRes, navMenuRes, branding, reviewsData, relatedData, topPicksRes, categoriesRes] = await Promise.all([
+    const [allTagRes, navMenuRes, branding, reviewsData, relatedData, topPicksRes, categoriesRes, footerLabels] = await Promise.all([
         wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
         wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(NAV_MENU_POSTS_QUERY, { first: 200 }, { revalidate: 3600 }),
         getSiteBranding(),
@@ -210,7 +210,8 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
             CATEGORIES_QUERY,
             { first: 50 },
             { revalidate: 3600 }
-        ).catch(() => ({ categories: { nodes: [] } }))
+        ).catch(() => ({ categories: { nodes: [] } })),
+        getFooterLabels()
     ]);
 
     const allTags = allTagRes?.tags?.nodes ?? [];
@@ -629,7 +630,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
 
     const footerSections = [
         {
-            title: 'Collections',
+            title: footerLabels.collections,
             items:
                 collectionLinks.length > 0
                     ? collectionLinks
@@ -640,11 +641,11 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                       ]
         },
         {
-            title: 'Blog Highlights',
+            title: footerLabels.blogHighlights,
             items: blogLinks.length > 0 ? blogLinks : [{ label: 'All Articles', href: '/articles' }]
         },
         {
-            title: 'Topics',
+            title: footerLabels.topics,
             items:
                 blogTagLinks.length > 0
                     ? blogTagLinks

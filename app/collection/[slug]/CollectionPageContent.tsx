@@ -23,6 +23,8 @@ interface Tool {
       };
     };
     keyFindingsRaw?: string;
+    whoIsItFor?: string;
+    pricing?: string;
   };
   tags?: {
     nodes: Array<{
@@ -80,6 +82,8 @@ export default function CollectionPageContent({
                     keyFindings={keyFindings}
                     tags={tool.tags?.nodes || []}
                     toolHref={`/tool/${tool.slug}`}
+                    whoIsItFor={tool.aiToolMeta?.whoIsItFor}
+                    pricing={tool.aiToolMeta?.pricing}
                   />
                 );
               })}

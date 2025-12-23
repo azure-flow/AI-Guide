@@ -13,7 +13,7 @@ import FallbackImg from '../components/FallbackImg';
 import ArticlesBlogScrollSection from '../components/ArticlesBlogScrollSection';
 import PrimaryHeader from '@/components/site-header/PrimaryHeader';
 import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
-import { getSiteBranding } from '@/lib/branding';
+import { getSiteBranding, getFooterLabels } from '@/lib/branding';
 import AllArticlesSection from './AllArticlesSection';
 import SiteFooter from '@/components/SiteFooter';
 
@@ -228,6 +228,9 @@ export default async function ArticlesPage() {
   // Fetch site branding
   const branding = await getSiteBranding();
 
+  // Fetch footer labels from CMS
+  const footerLabels = await getFooterLabels();
+
   // Fetch data for footer sections
   const allToolsData = await wpFetch<{ posts: { nodes: any[] } }>(
     ALL_TOOLS_QUERY, 
@@ -272,7 +275,7 @@ export default async function ArticlesPage() {
 
   const footerSections = [
     {
-      title: "Collections",
+      title: footerLabels.collections,
       items:
         collectionLinks.length > 0
           ? collectionLinks
@@ -293,11 +296,11 @@ export default async function ArticlesPage() {
             ],
     },
     {
-      title: "Blog Highlights",
+      title: footerLabels.blogHighlights,
       items: blogLinks.length > 0 ? blogLinks : [{ label: "All Articles", href: "/articles" }],
     },
     {
-      title: "Topics",
+      title: footerLabels.topics,
       items:
         blogTagLinks.length > 0
           ? blogTagLinks

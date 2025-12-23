@@ -13,7 +13,8 @@ import {
     TAG_BY_SLUG_QUERY,
     TOOLS_BY_TAG_QUERY,
     NAV_MENU_POSTS_QUERY,
-    REVIEWS_BY_POST_ID_QUERY
+    REVIEWS_BY_POST_ID_QUERY,
+    TOOLS_BY_DATE_DESC_QUERY
 } from '../../../lib/queries';
 import { wpFetch } from '../../../lib/wpclient';
 import Container from '../../(components)/Container';
@@ -123,9 +124,15 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
     }
 
     // Fetch all data in parallel for faster loading
+    // Special handling for "new" slug - get first 9 tools sorted by date ASC
+    const toolsQuery =
+        slug === 'new'
+            ? wpFetch<ToolsData>(TOOLS_BY_DATE_DESC_QUERY, {}, { revalidate: 3600 })
+            : wpFetch<ToolsData>(TOOLS_BY_TAG_QUERY, { tag: [slug] }, { revalidate: 3600 });
+
     const [toolsData, allTagRes, navMenuRes, branding, tagsWithCountRes, allReviewsData, megaphoneIcon] =
         await Promise.all([
-            wpFetch<ToolsData>(TOOLS_BY_TAG_QUERY, { tag: [slug] }, { revalidate: 3600 }).catch(() => ({
+            toolsQuery.catch(() => ({
                 posts: { nodes: [] }
             })),
             wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
@@ -154,6 +161,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
             }>(REVIEWS_BY_POST_ID_QUERY, {}, { revalidate: 3600 }).catch(() => ({ reviews: { nodes: [] } })),
             getMegaphoneIcon()
         ]);
+
+    console.log(toolsData?.posts?.nodes?.length, 'toolsData');
 
     const tools = toolsData?.posts?.nodes ?? [];
     const allTags = allTagRes?.tags?.nodes ?? [];

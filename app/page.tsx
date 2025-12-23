@@ -38,7 +38,7 @@ import AIToolScrollSection from "./components/AIToolScrollSection";
 import ClientSideTagFilter from "./components/ClientSideTagFilter";
 import SiteFooter from "@/components/SiteFooter";
 import CategoryList from "@/components/CategoryList";
-import { getSiteBranding, getMegaphoneIcon } from "@/lib/branding";
+import { getSiteBranding, getMegaphoneIcon, getFooterLabels } from "@/lib/branding";
 
 
 
@@ -89,7 +89,6 @@ async function getCategories(): Promise<Category[]> {
       { revalidate: 3600 }
     );
 
-    console.log('🔎 Fetching categories:', tagData?.tags?.nodes);
     // Map WordPress tags to category format, using slug as id
     return tagData?.tags?.nodes.map(tag => ({
       id: tag.slug,  // Use slug as id for URL
@@ -197,6 +196,9 @@ export default async function HomePage({
   
   // Fetch megaphone icon for blue cards
   const megaphoneIcon = await getMegaphoneIcon();
+
+  // Fetch footer labels from CMS
+  const footerLabels = await getFooterLabels();
 
   // Fetch ALL tools for client-side filtering (much faster tag switching)
   const allToolsData = await wpFetch<{ posts: { nodes: any[] } }>(
@@ -316,7 +318,7 @@ export default async function HomePage({
 
   const footerSections = [
     {
-      title: "Collections",
+      title: footerLabels.collections,
       items:
         collectionLinks.length > 0
           ? collectionLinks
@@ -327,11 +329,11 @@ export default async function HomePage({
             ],
     },
     {
-      title: "Blog Highlights",
+      title: footerLabels.blogHighlights,
       items: blogLinks.length > 0 ? blogLinks : [{ label: "All Articles", href: "/articles" }],
     },
     {
-      title: "Topics",
+      title: footerLabels.topics,
       items:
         blogTagLinks.length > 0
           ? blogTagLinks
