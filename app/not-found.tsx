@@ -105,12 +105,6 @@ export default async function NotFound() {
               >
                 Go to Homepage
               </Link>
-              <Link
-                href="/articles"
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-semibold text-gray-700 bg-white rounded-lg border border-gray-300 transition-colors hover:bg-gray-50"
-              >
-                Browse Articles
-              </Link>
             </div>
 
             {/* Helpful Links */}

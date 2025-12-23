@@ -251,7 +251,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                                     href="/collection/new"
                                     className="inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-gray-700 bg-white rounded-lg border border-gray-300 transition-colors hover:bg-gray-50"
                                 >
-                                    Browse All Tools
+                                    Browse New Tools
                                 </Link>
                             </div>
                         </div>
