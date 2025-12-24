@@ -116,7 +116,7 @@ export const CATEGORIES_QUERY = `
 export const TAGS_QUERY = `
   query GetTags {
     posts(
-      first: 200
+      first: 100
       where: { categoryName: "ai-review", status: PUBLISH }
     ) {
       nodes {

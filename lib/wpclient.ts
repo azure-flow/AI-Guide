@@ -39,11 +39,32 @@ export async function wpFetch<T>(
   }
 
   const endpoint = getWpEndpoint();
-  const res = await fetch(endpoint, fetchOpts);
+  
+  // Add timeout to prevent hanging requests (30 seconds)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  
+  try {
+    const res = await fetch(endpoint, { ...fetchOpts, signal: controller.signal });
+    clearTimeout(timeoutId);
 
-  const json = await res.json();
-  if (!res.ok || json.errors) {
-    throw new Error(JSON.stringify(json.errors ?? res.status));
+    // Check content type before parsing
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      throw new Error(`Expected JSON but got ${contentType}. Response: ${text.substring(0, 200)}`);
+    }
+
+    const json = await res.json();
+    if (!res.ok || json.errors) {
+      throw new Error(JSON.stringify(json.errors ?? res.status));
+    }
+    return json.data as T;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout: WordPress API did not respond within 30 seconds');
+    }
+    throw error;
   }
-  return json.data as T;
 }
