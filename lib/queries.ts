@@ -110,11 +110,24 @@ export const CATEGORIES_QUERY = `
   }
 `;
 
-// タグ（最大6件）
+// タグ（最大6件）- Only tags used in ai-review category posts
+// Since WordPress GraphQL doesn't support filtering tags by category directly,
+// we fetch ai-review posts and aggregate their tags
 export const TAGS_QUERY = `
-  query GetTags($first: Int = 6) {
-    tags(first: $first, where: { orderby: COUNT, order: DESC }) {
-      nodes { id name slug count }
+  query GetTags {
+    posts(
+      first: 200
+      where: { categoryName: "ai-review", status: PUBLISH }
+    ) {
+      nodes {
+        tags {
+          nodes {
+            id
+            name
+            slug
+          }
+        }
+      }
     }
   }
 `;
@@ -171,7 +184,7 @@ export const TAG_BY_SLUG_QUERY = `
 export const TOOLS_BY_TAG_QUERY = `
   query GetToolsByTag($tag: [String]) {
     posts(
-      where: { tagSlugIn: $tag, orderby: { field: DATE, order: DESC } }
+      where: { tagSlugIn: $tag, orderby: { field: DATE, order: DESC }, categoryName: "ai-review" }
       first: 30
     ) {
       nodes {

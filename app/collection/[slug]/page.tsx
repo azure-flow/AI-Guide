@@ -142,9 +142,17 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                 { revalidate: 3600 }
             ),
             getSiteBranding(),
-            wpFetch<{ tags: { nodes: { id: string; name: string; slug: string; count: number }[] } }>(
+            wpFetch<{ 
+                posts: { 
+                    nodes: Array<{ 
+                        tags: { 
+                            nodes: Array<{ id: string; name: string; slug: string }> 
+                        } 
+                    }> 
+                } 
+            }>(
                 TAGS_QUERY,
-                { first: 50 },
+                {},
                 { revalidate: 3600 }
             ),
             wpFetch<{
@@ -167,8 +175,28 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
     const tools = toolsData?.posts?.nodes ?? [];
     const allTags = allTagRes?.tags?.nodes ?? [];
     const navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
-    // Sort tags: "new" first, then by count descending
-    const tagsWithCountRaw = tagsWithCountRes?.tags?.nodes ?? [];
+    
+    // Aggregate tags from ai-review posts and count occurrences
+    const tagMap = new Map<string, { id: string; name: string; slug: string; count: number }>();
+    
+    tagsWithCountRes?.posts?.nodes?.forEach((post) => {
+        post.tags?.nodes?.forEach((tag) => {
+            const existing = tagMap.get(tag.slug);
+            if (existing) {
+                existing.count += 1;
+            } else {
+                tagMap.set(tag.slug, {
+                    id: tag.id,
+                    name: tag.name,
+                    slug: tag.slug,
+                    count: 1
+                });
+            }
+        });
+    });
+
+    // Convert to array, sort: "new" first, then by count descending
+    const tagsWithCountRaw = Array.from(tagMap.values());
     const tagsWithCount = [...tagsWithCountRaw].sort((a, b) => {
         if (a.slug === 'new') return -1;
         if (b.slug === 'new') return 1;
@@ -358,7 +386,7 @@ export async function generateStaticParams() {
     try {
         const tagsData = await wpFetch<{ tags: { nodes: Array<{ slug: string }> } }>(
             TAGS_QUERY,
-            { first: 50 },
+            {},
             { revalidate: 3600 }
         );
 

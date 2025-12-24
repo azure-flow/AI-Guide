@@ -239,12 +239,33 @@ export default async function ArticlesPage() {
   );
   const allTools = allToolsData?.posts?.nodes ?? [];
 
-  const tagsRes = await wpFetch<{ tags: { nodes: Array<{ name: string; slug: string }> } }>(
+  // Fetch tags - only tags used in ai-review category
+  const tagsPostsData = await wpFetch<{ 
+    posts: { 
+      nodes: Array<{ 
+        tags: { 
+          nodes: Array<{ name: string; slug: string }> 
+        } 
+      }> 
+    } 
+  }>(
     TAGS_QUERY,
-    { first: 50 },
+    {},
     { revalidate: 3600 }
   );
-  const allTagsForFooter = tagsRes?.tags?.nodes ?? [];
+
+  // Aggregate unique tags from posts
+  const tagSet = new Set<string>();
+  const allTagsForFooter: Array<{ name: string; slug: string }> = [];
+  
+  tagsPostsData?.posts?.nodes?.forEach((post) => {
+    post.tags?.nodes?.forEach((tag) => {
+      if (!tagSet.has(tag.slug)) {
+        tagSet.add(tag.slug);
+        allTagsForFooter.push({ name: tag.name, slug: tag.slug });
+      }
+    });
+  });
 
   // Build footer sections
   const collectionLinks = navGroups

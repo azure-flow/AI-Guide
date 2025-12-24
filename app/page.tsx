@@ -81,20 +81,52 @@ interface TopPick {
 // ============================================================================
 
 async function getCategories(): Promise<Category[]> {
-  // Fetch real tags from WordPress
+  // Fetch real tags from WordPress - only tags used in ai-review category
   try {
-    const tagData = await wpFetch<{ tags: { nodes: Array<{ id: string; name: string; slug: string; count: number }> } }>(
+    const postsData = await wpFetch<{ 
+      posts: { 
+        nodes: Array<{ 
+          tags: { 
+            nodes: Array<{ id: string; name: string; slug: string }> 
+          } 
+        }> 
+      } 
+    }>(
       TAGS_QUERY,
-      { first: 10 },
+      {},
       { revalidate: 3600 }
     );
 
+    // Aggregate tags from posts and count occurrences
+    const tagMap = new Map<string, { id: string; name: string; slug: string; count: number }>();
+    
+    postsData?.posts?.nodes?.forEach((post) => {
+      post.tags?.nodes?.forEach((tag) => {
+        const existing = tagMap.get(tag.slug);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          tagMap.set(tag.slug, {
+            id: tag.id,
+            name: tag.name,
+            slug: tag.slug,
+            count: 1
+          });
+        }
+      });
+    });
+
+    // Convert to array, sort by count descending, and take first 10
+    const tags = Array.from(tagMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
     // Map WordPress tags to category format, using slug as id
-    return tagData?.tags?.nodes.map(tag => ({
+    return tags.map(tag => ({
       id: tag.slug,  // Use slug as id for URL
       name: tag.name,
-      count: tag.count || 0
-    })) ?? [];
+      count: tag.count
+    }));
   } catch (error) {
     console.error('Error fetching categories:', error);
     // Fallback to mock data if WordPress fails
@@ -175,11 +207,49 @@ export default async function HomePage({
 
   const active = searchParams?.tag; // /?tag=marketing など
   // Fetch all tags for the scrollable pills (get more tags for horizontal scrolling)
-  const tagData = await wpFetch<{ tags: { nodes: Array<{ id: string; name: string; slug: string; count: number }> } }>(
+  // Only tags used in ai-review category
+  const postsData = await wpFetch<{ 
+    posts: { 
+      nodes: Array<{ 
+        tags: { 
+          nodes: Array<{ id: string; name: string; slug: string }> 
+        } 
+      }> 
+    } 
+  }>(
     TAGS_QUERY,
-    { first: 50 }
+    {}
   );
-  const tags = tagData?.tags?.nodes ?? [];
+
+  // Aggregate tags from posts and count occurrences
+  const tagMap = new Map<string, { id: string; name: string; slug: string; count: number }>();
+  
+  postsData?.posts?.nodes?.forEach((post) => {
+    post.tags?.nodes?.forEach((tag) => {
+      const existing = tagMap.get(tag.slug);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        tagMap.set(tag.slug, {
+          id: tag.id,
+          name: tag.name,
+          slug: tag.slug,
+          count: 1
+        });
+      }
+    });
+  });
+
+  // Convert to array and sort by count descending
+  const tags = Array.from(tagMap.values())
+    .sort((a, b) => b.count - a.count)
+    .map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      count: tag.count
+    }));
+  
   const current = active || (tags[0]?.slug as string | undefined);
 
   const allTagRes = await wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(
@@ -219,13 +289,34 @@ export default async function HomePage({
       slug: t.slug as string,
     })) ?? [];
 
-  // Fetch tag names for section titles
-  const trendingTagRes = await wpFetch<{ tags: { nodes: Array<{ name: string; slug: string }> } }>(
+  // Fetch tag names for section titles - only tags used in ai-review category
+  const trendingTagPostsData = await wpFetch<{ 
+    posts: { 
+      nodes: Array<{ 
+        tags: { 
+          nodes: Array<{ name: string; slug: string }> 
+        } 
+      }> 
+    } 
+  }>(
     TAGS_QUERY,
-    { first: 50 },
+    {},
     { revalidate: 3600 }
   );
-  const allTagsForTitles = trendingTagRes?.tags?.nodes ?? [];
+
+  // Aggregate unique tags from posts
+  const tagSet = new Set<string>();
+  const allTagsForTitles: Array<{ name: string; slug: string }> = [];
+  
+  trendingTagPostsData?.posts?.nodes?.forEach((post) => {
+    post.tags?.nodes?.forEach((tag) => {
+      if (!tagSet.has(tag.slug)) {
+        tagSet.add(tag.slug);
+        allTagsForTitles.push({ name: tag.name, slug: tag.slug });
+      }
+    });
+  });
+  
   const trendingTag = allTagsForTitles.find(t => t.slug === 'trending');
   const trendingTitle = trendingTag?.name || 'Trending';
 
