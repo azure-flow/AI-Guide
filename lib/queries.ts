@@ -171,7 +171,7 @@ export const TAG_BY_SLUG_QUERY = `
 export const TOOLS_BY_TAG_QUERY = `
   query GetToolsByTag($tag: [String]) {
     posts(
-      where: { tagSlugIn: $tag, categoryName: "ai-review", orderby: { field: DATE, order: DESC } }
+      where: { tagSlugIn: $tag, orderby: { field: DATE, order: DESC } }
       first: 30
     ) {
       nodes {

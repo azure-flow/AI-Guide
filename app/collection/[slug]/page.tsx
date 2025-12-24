@@ -167,7 +167,13 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
     const tools = toolsData?.posts?.nodes ?? [];
     const allTags = allTagRes?.tags?.nodes ?? [];
     const navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
-    const tagsWithCount = tagsWithCountRes?.tags?.nodes ?? [];
+    // Sort tags: "new" first, then by count descending
+    const tagsWithCountRaw = tagsWithCountRes?.tags?.nodes ?? [];
+    const tagsWithCount = [...tagsWithCountRaw].sort((a, b) => {
+        if (a.slug === 'new') return -1;
+        if (b.slug === 'new') return 1;
+        return b.count - a.count;
+    });
     const allReviews = allReviewsData?.reviews?.nodes ?? [];
 
     // Calculate average rating for each tool
@@ -310,7 +316,9 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                                             >
                                                 {t.name}
                                             </h3>
-                                            <p className="text-gray-400 text-[10px] tracking-wide">{t.count} LISTING</p>
+                                            {t.slug !== 'new' && (
+                                                <p className="text-gray-400 text-[10px] tracking-wide">{t.count} LISTING</p>
+                                            )}
                                         </div>
                                     </Link>
                                 ))}

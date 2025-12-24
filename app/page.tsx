@@ -157,7 +157,13 @@ export default async function HomePage({
 
   
   // These all run at build time and cache the results
-  const categories = await getCategories();
+  const categoriesRaw = await getCategories();
+  // Sort categories: "new" first, then by count descending
+  const categories = [...categoriesRaw].sort((a, b) => {
+    if (a.id === 'new') return -1;
+    if (b.id === 'new') return 1;
+    return b.count - a.count;
+  });
   const trendingPosts = await getTrendingTools();
   const newPosts = await getNewTools();
   // === TOP PICKS (straight fetch; no fallbacks) ===
@@ -438,7 +444,9 @@ export default async function HomePage({
                 {/* Left-aligned text */}
                 <div className="absolute left-4 top-14 right-3 flex flex-col">
                   <h3 className="text-white text-base font-bold mb-0.5 truncate" title={category.name}>{category.name}</h3>
-                  <p className="text-gray-400 text-[10px] tracking-wide">{category.count} LISTING</p>
+                  {category.id !== 'new' && (
+                    <p className="text-gray-400 text-[10px] tracking-wide">{category.count} LISTING</p>
+                  )}
                 </div>
               </Link>
             ))}
