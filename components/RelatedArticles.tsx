@@ -52,7 +52,7 @@ export default async function RelatedArticles({
       <div className="relative left-1/2 -translate-x-1/2 w-[min(88rem,92vw)] px-6 md:px-8">
         <h2
           id="related-articles"
-          className="text-center text-sm font-semibold text-gray-700 mb-6"
+          className="text-center text-4xl font-semibold text-gray-700 mb-6"
         >
           Recommended Articles
         </h2>
@@ -130,7 +130,7 @@ export default async function RelatedArticles({
                     </div>
                     <div className="min-w-0">
                       <p className="text-base font-semibold text-gray-900">
-                        by {authorName}
+                        by <span className="text-blue-600">{authorName}</span>
                       </p>
                     </div>
                   </div>

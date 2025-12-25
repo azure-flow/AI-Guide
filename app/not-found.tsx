@@ -9,7 +9,7 @@ import {
   ALL_TOOLS_QUERY,
 } from "../lib/queries";
 import { buildNavGroups, NavMenuPostNode } from "@/lib/nav-groups";
-import { getSiteBranding, getFooterLabels, type SiteBranding, FooterLabels } from "@/lib/branding";
+import { getSiteBranding, getFooterSections, type SiteBranding } from "@/lib/branding";
 
 export default async function NotFound() {
   // Fetch header data (same as homepage)
@@ -20,14 +20,30 @@ export default async function NotFound() {
     siteLogo: null,
   };
   let searchTools: Array<{ title: string; slug: string }> = [];
-  let footerLabels: FooterLabels = {
-    collections: "Collections",
-    blogHighlights: "Blog Highlights",
-    topics: "Topics"
-  };
+  let footerSections = [
+    {
+      title: "Collections",
+      items: [
+        { label: "All AI Tools", href: "/#reviews" },
+        { label: "Trending", href: "/#reviews" },
+        { label: "New Releases", href: "/#reviews" }
+      ]
+    },
+    {
+      title: "Blog Highlights",
+      items: [{ label: "All Articles", href: "/articles" }]
+    },
+    {
+      title: "Topics",
+      items: [
+        { label: "Guides", href: "/articles" },
+        { label: "Case Studies", href: "/articles" }
+      ]
+    }
+  ];
 
   try {
-    let [allTagRes, navMenuRes, brandingData, allToolsData, footerLabelsData] = await Promise.all([
+    let [allTagRes, navMenuRes, brandingData, allToolsData, footerSectionsData] = await Promise.all([
       wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(
         ALL_TAG_SLUGS,
         {},
@@ -44,17 +60,33 @@ export default async function NotFound() {
         { first: 200 },
         { revalidate: 3600 }
       ).catch(() => ({ posts: { nodes: [] } })),
-      getFooterLabels().catch(() => ({
-        collections: "Collections",
-        blogHighlights: "Blog Highlights",
-        topics: "Topics"
-      }))
+      getFooterSections().catch(() => [
+        {
+          title: "Collections",
+          items: [
+            { label: "All AI Tools", href: "/#reviews" },
+            { label: "Trending", href: "/#reviews" },
+            { label: "New Releases", href: "/#reviews" }
+          ]
+        },
+        {
+          title: "Blog Highlights",
+          items: [{ label: "All Articles", href: "/articles" }]
+        },
+        {
+          title: "Topics",
+          items: [
+            { label: "Guides", href: "/articles" },
+            { label: "Case Studies", href: "/articles" }
+          ]
+        }
+      ])
     ]);
 
     allTags = allTagRes?.tags?.nodes ?? [];
     navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
     branding = brandingData;
-    footerLabels = footerLabelsData;
+    footerSections = footerSectionsData;
     const allTools = allToolsData?.posts?.nodes ?? [];
     searchTools = allTools.map((t: any) => ({
       title: t.title as string,
@@ -138,29 +170,7 @@ export default async function NotFound() {
       </main>
 
       {/* Footer - Same as homepage */}
-      <SiteFooter
-        sections={[
-          {
-            title: footerLabels.collections,
-            items: [
-              { label: "All AI Tools", href: "/#reviews" },
-              { label: "Trending", href: "/#reviews" },
-              { label: "New Releases", href: "/#reviews" },
-            ],
-          },
-          {
-            title: footerLabels.blogHighlights,
-            items: [{ label: "All Articles", href: "/articles" }],
-          },
-          {
-            title: footerLabels.topics,
-            items: [
-              { label: "Guides", href: "/articles" },
-              { label: "Case Studies", href: "/articles" },
-            ],
-          },
-        ]}
-      />
+      <SiteFooter sections={footerSections} />
     </div>
   );
 }

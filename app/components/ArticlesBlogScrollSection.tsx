@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -17,22 +17,52 @@ export default function ArticlesBlogScrollSection({ posts }: ArticlesBlogScrollS
   const startX = useRef(0);
   const scrollLeft = useRef(0);
   const dragDistance = useRef(0);
+  const rafId = useRef<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (scrollContainerRef.current) {
-      isDragging.current = true;
-      dragDistance.current = 0;
-      startX.current = e.pageX - scrollContainerRef.current.offsetLeft;
-      scrollLeft.current = scrollContainerRef.current.scrollLeft;
-      scrollContainerRef.current.style.cursor = 'grabbing';
-    }
+  const updateCurrentIndex = () => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const slides = container.querySelectorAll<HTMLDivElement>('.blog-slide');
+    if (slides.length === 0) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.left + containerRect.width / 2;
+    
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+
+    slides.forEach((slide, index) => {
+      const slideRect = slide.getBoundingClientRect();
+      const slideCenter = slideRect.left + slideRect.width / 2;
+      const distance = Math.abs(slideCenter - containerCenter);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setCurrentIndex(closestIndex);
   };
 
-  const handleMouseLeave = () => {
-    if (scrollContainerRef.current) {
-      isDragging.current = false;
-      scrollContainerRef.current.style.cursor = 'grab';
+  const handleMouseDown = (e: React.MouseEvent | MouseEvent) => {
+    // Check if click is within the scroll container
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const x = (e as MouseEvent).clientX || (e as React.MouseEvent).clientX;
+    const y = (e as MouseEvent).clientY || (e as React.MouseEvent).clientY;
+    
+    // Check if click is inside container bounds
+    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+      isDragging.current = true;
+      dragDistance.current = 0;
+      startX.current = x;
+      scrollLeft.current = container.scrollLeft;
+      container.style.cursor = 'grabbing';
+      container.style.userSelect = 'none';
+      e.preventDefault();
     }
   };
 
@@ -40,19 +70,41 @@ export default function ArticlesBlogScrollSection({ posts }: ArticlesBlogScrollS
     if (scrollContainerRef.current) {
       isDragging.current = false;
       scrollContainerRef.current.style.cursor = 'grab';
+      scrollContainerRef.current.style.userSelect = '';
+      
+      // Cancel any pending animation frame
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = null;
+      }
+      
       setTimeout(() => {
         dragDistance.current = 0;
       }, 100);
+      
+      // Update index after drag ends
+      updateCurrentIndex();
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging.current || !scrollContainerRef.current) return;
     e.preventDefault();
-    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const x = e.clientX;
     const walk = (x - startX.current) * 2;
-    dragDistance.current += Math.abs(walk);
+    const absWalk = Math.abs(walk);
+    dragDistance.current += absWalk;
     scrollContainerRef.current.scrollLeft = scrollLeft.current - walk;
+    startX.current = x;
+    scrollLeft.current = scrollContainerRef.current.scrollLeft;
+    
+    // Update current index during drag (throttled with requestAnimationFrame)
+    if (rafId.current === null) {
+      rafId.current = requestAnimationFrame(() => {
+        updateCurrentIndex();
+        rafId.current = null;
+      });
+    }
   };
 
   const scrollToIndex = (index: number) => {
@@ -88,6 +140,61 @@ export default function ArticlesBlogScrollSection({ posts }: ArticlesBlogScrollS
     scrollToIndex(index);
   };
 
+  useEffect(() => {
+    // Set initial index
+    updateCurrentIndex();
+    
+    const container = scrollContainerRef.current;
+    
+    // Global mouse event listeners for dragging
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      handleMouseMove(e);
+    };
+    
+    const handleGlobalMouseUp = () => {
+      handleMouseUp();
+    };
+    
+    // Prevent link navigation when dragging using event delegation
+    const handleLinkClick = (e: Event) => {
+      if (dragDistance.current > 5) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }
+    };
+
+    // Handle scroll events to update current index
+    const handleScroll = () => {
+      if (!isDragging.current) {
+        updateCurrentIndex();
+      }
+    };
+    
+    if (container) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+      container.addEventListener('scroll', handleScroll);
+      
+      // Use event delegation to catch all link clicks in the container
+      container.addEventListener('click', handleLinkClick, true);
+      
+      return () => {
+        window.removeEventListener('mousemove', handleGlobalMouseMove);
+        window.removeEventListener('mouseup', handleGlobalMouseUp);
+        container.removeEventListener('scroll', handleScroll);
+        container.removeEventListener('click', handleLinkClick, true);
+        
+        // Clean up any pending animation frame
+        if (rafId.current !== null) {
+          cancelAnimationFrame(rafId.current);
+          rafId.current = null;
+        }
+      };
+    }
+  }, [posts]);
+
   if (!posts?.length) return null;
 
   return (
@@ -106,9 +213,6 @@ export default function ArticlesBlogScrollSection({ posts }: ArticlesBlogScrollS
               pointerEvents: 'auto',
             }}
             onMouseDown={handleMouseDown}
-            onMouseLeave={handleMouseLeave}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
           >
             <div className="flex gap-6 px-4 md:px-0" style={{ width: 'max-content' }}>
               {posts.map((p: any) => {
@@ -129,13 +233,38 @@ export default function ArticlesBlogScrollSection({ posts }: ArticlesBlogScrollS
                 const authorName = p.author?.node?.name ?? '';
 
                 return (
-                  <div key={p.id} className="blog-slide flex-none relative">
+                  <div 
+                    key={p.id} 
+                    className="blog-slide flex-none relative"
+                    onMouseDown={(e) => {
+                      // Allow drag to start from card
+                      handleMouseDown(e);
+                    }}
+                    onClick={(e) => {
+                      // Prevent card link navigation if user was dragging
+                      if (dragDistance.current > 5) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Also prevent navigation on the link overlay
+                        const link = (e.target as HTMLElement).closest('a');
+                        if (link) {
+                          link.onclick = (ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                          };
+                        }
+                      }
+                    }}
+                    style={{ userSelect: 'none', pointerEvents: 'auto' }}
+                  >
                     <Link
                       href={`/blog/${p.slug}`}
                       className="relative block"
                       onClick={(e) => {
+                        // If user was dragging, don't treat as a click
                         if (dragDistance.current > 5) {
                           e.preventDefault();
+                          e.stopPropagation();
                         }
                       }}
                     >
@@ -239,11 +368,8 @@ export default function ArticlesBlogScrollSection({ posts }: ArticlesBlogScrollS
             </button>
 
             <div className="flex items-center gap-3">
-              {posts.slice(0, 5).map((_, index) => {
-                const isActive =
-                  posts.length <= 5
-                    ? index === currentIndex
-                    : index === Math.min(currentIndex, 4);
+              {posts.map((_, index) => {
+                const isActive = index === currentIndex;
 
                 return (
                   <button

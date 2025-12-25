@@ -28,7 +28,7 @@ import TableOfContents from '@/components/TableOfContents';
 import { addAnchorsAndExtractHeadings } from '@/lib/toc';
 import PrimaryHeader from '@/components/site-header/PrimaryHeader';
 import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
-import { getSiteBranding, getFooterLabels } from '@/lib/branding';
+import { getSiteBranding, getFooterSections } from '@/lib/branding';
 import SiteFooter from '@/components/SiteFooter';
 
 // ============================================================================
@@ -152,7 +152,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
     // Fetch all data in parallel for faster loading
     const tagSlugs = post.tags?.nodes?.map((t) => t.slug) ?? [];
 
-    const [relatedData, allTagRes, navTagsRes, navMenuRes, branding, topPicksRes, categoriesRes, footerLabels] = await Promise.all([
+    const [relatedData, allTagRes, navTagsRes, navMenuRes, branding, topPicksRes, categoriesRes, footerSections] = await Promise.all([
         tagSlugs.length > 0
             ? wpFetch<{ posts: { nodes: any[] } }>(
                   RELATED_POSTS_QUERY,
@@ -178,7 +178,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
             { first: 50 },
             { revalidate: 3600 }
         ).catch(() => ({ categories: { nodes: [] } })),
-        getFooterLabels()
+        getFooterSections()
     ]);
 
     const relatedPosts = relatedData?.posts?.nodes ?? [];
@@ -417,64 +417,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
             </section>
 
             {/* Footer */}
-            {(() => {
-                // Build footer sections similar to homepage
-                const collectionLinks = navGroups
-                    .flatMap((group) => group.tags || [])
-                    .slice(0, 8)
-                    .map((tag) => ({
-                        label: tag.label,
-                        href: `/collection/${tag.slug}`
-                    }));
-
-                const categoryLinks = allCategories
-                    .filter((cat) => cat.slug !== 'uncategorized' && cat.slug !== 'blog')
-                    .slice(0, 8)
-                    .map((cat) => ({
-                        label: cat.name,
-                        href: `/collection/${cat.slug}`
-                    }));
-
-                const blogTagLinks = allTags.slice(0, 8).map((tag) => ({
-                    label: tag.name,
-                    href: `/articles?tag=${tag.slug}`
-                }));
-
-                const blogLinks = topPicks.slice(0, 13).map((post) => ({
-                    label: post.title,
-                    href: `/blog/${post.slug}`
-                }));
-
-                const footerSections = [
-                    {
-                        title: footerLabels.collections,
-                        items:
-                            collectionLinks.length > 0
-                                ? collectionLinks
-                                : [
-                                      { label: 'All AI Tools', href: '/#reviews' },
-                                      { label: 'Trending', href: '/#reviews' },
-                                      { label: 'New Releases', href: '/#reviews' }
-                                  ]
-                    },
-                    {
-                        title: footerLabels.blogHighlights,
-                        items: blogLinks.length > 0 ? blogLinks : [{ label: 'All Articles', href: '/articles' }]
-                    },
-                    {
-                        title: footerLabels.topics,
-                        items:
-                            blogTagLinks.length > 0
-                                ? blogTagLinks
-                                : [
-                                      { label: 'Guides', href: '/articles' },
-                                      { label: 'Case Studies', href: '/articles' }
-                                  ]
-                    }
-                ];
-
-                return <SiteFooter sections={footerSections} />;
-            })()}
+            <SiteFooter sections={footerSections} />
         </div>
     );
 }

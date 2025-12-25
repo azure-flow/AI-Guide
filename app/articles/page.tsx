@@ -13,7 +13,7 @@ import FallbackImg from '../components/FallbackImg';
 import ArticlesBlogScrollSection from '../components/ArticlesBlogScrollSection';
 import PrimaryHeader from '@/components/site-header/PrimaryHeader';
 import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
-import { getSiteBranding, getFooterLabels } from '@/lib/branding';
+import { getSiteBranding, getFooterSections } from '@/lib/branding';
 import AllArticlesSection from './AllArticlesSection';
 import SiteFooter from '@/components/SiteFooter';
 
@@ -228,109 +228,8 @@ export default async function ArticlesPage() {
   // Fetch site branding
   const branding = await getSiteBranding();
 
-  // Fetch footer labels from CMS
-  const footerLabels = await getFooterLabels();
-
-  // Fetch data for footer sections
-  const allToolsData = await wpFetch<{ posts: { nodes: any[] } }>(
-    ALL_TOOLS_QUERY, 
-    { first: 200 },
-    { revalidate: 3600 }
-  );
-  const allTools = allToolsData?.posts?.nodes ?? [];
-
-  // Fetch tags - only tags used in ai-review category
-  const tagsPostsData = await wpFetch<{ 
-    posts: { 
-      nodes: Array<{ 
-        tags: { 
-          nodes: Array<{ name: string; slug: string }> 
-        } 
-      }> 
-    } 
-  }>(
-    TAGS_QUERY,
-    {},
-    { revalidate: 3600 }
-  );
-
-  // Aggregate unique tags from posts
-  const tagSet = new Set<string>();
-  const allTagsForFooter: Array<{ name: string; slug: string }> = [];
-  
-  tagsPostsData?.posts?.nodes?.forEach((post) => {
-    post.tags?.nodes?.forEach((tag) => {
-      if (!tagSet.has(tag.slug)) {
-        tagSet.add(tag.slug);
-        allTagsForFooter.push({ name: tag.name, slug: tag.slug });
-      }
-    });
-  });
-
-  // Build footer sections
-  const collectionLinks = navGroups
-    .flatMap((group) => group.tags || [])
-    .slice(0, 8)
-    .map((tag) => ({
-      label: tag.label,
-      href: `/collection/${tag.slug}`,
-    }));
-
-  const categoryLinks = allCategories
-    .filter((cat) => cat.slug !== "uncategorized" && cat.slug !== "blog")
-    .slice(0, 8)
-    .map((cat) => ({
-      label: cat.name,
-      href: `/collection/${cat.slug}`,
-    }));
-
-  const blogTagLinks = allTagsForFooter.slice(0, 8).map((tag) => ({
-    label: tag.name,
-    href: `/articles?tag=${tag.slug}`,
-  }));
-
-  const blogLinks = carouselArticles.slice(0, 13).map((post) => ({
-    label: post.title,
-    href: `/blog/${post.slug}`,
-  }));
-
-  const footerSections = [
-    {
-      title: footerLabels.collections,
-      items:
-        collectionLinks.length > 0
-          ? collectionLinks
-          : [
-              { label: "All AI Tools", href: "/#reviews" },
-              { label: "Trending", href: "/#reviews" },
-              { label: "New Releases", href: "/#reviews" },
-            ],
-    },
-    {
-      title: "Top Categories",
-      items:
-        categoryLinks.length > 0
-          ? categoryLinks
-          : [
-              { label: "Marketing", href: "/collection/marketing" },
-              { label: "Productivity", href: "/collection/productivity" },
-            ],
-    },
-    {
-      title: footerLabels.blogHighlights,
-      items: blogLinks.length > 0 ? blogLinks : [{ label: "All Articles", href: "/articles" }],
-    },
-    {
-      title: footerLabels.topics,
-      items:
-        blogTagLinks.length > 0
-          ? blogTagLinks
-          : [
-              { label: "Guides", href: "/articles" },
-              { label: "Case Studies", href: "/articles" },
-            ],
-    },
-  ];
+  // Fetch footer sections (same for all pages)
+  const footerSections = await getFooterSections();
 
   // All articles will be passed to client component
 

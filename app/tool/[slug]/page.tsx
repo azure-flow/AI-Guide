@@ -23,7 +23,7 @@ import PricingSection from '../../../components/PricingSection';
 import Container from '../../(components)/Container';
 import PrimaryHeader from '@/components/site-header/PrimaryHeader';
 import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
-import { getSiteBranding, getFooterLabels } from '@/lib/branding';
+import { getSiteBranding, getFooterSections } from '@/lib/branding';
 import Image from 'next/image';
 import StatCard from './StatCard';
 import ReviewCard from './ReviewCard';
@@ -183,7 +183,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
     const firstTag = post.tags?.nodes?.[0];
 
     // Fetch all independent data in parallel for faster page load
-    const [allTagRes, navMenuRes, branding, reviewsData, relatedData, topPicksRes, categoriesRes, footerLabels] = await Promise.all([
+    const [allTagRes, navMenuRes, branding, reviewsData, relatedData, topPicksRes, categoriesRes, footerSections] = await Promise.all([
         wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
         wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(NAV_MENU_POSTS_QUERY, { first: 200 }, { revalidate: 3600 }),
         getSiteBranding(),
@@ -211,7 +211,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
             { first: 50 },
             { revalidate: 3600 }
         ).catch(() => ({ categories: { nodes: [] } })),
-        getFooterLabels()
+        getFooterSections()
     ]);
 
     const allTags = allTagRes?.tags?.nodes ?? [];
@@ -602,59 +602,6 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
     const legacyRelatedImages: { sourceUrl: string; altText?: string }[] = [];
 
     // Build footer sections similar to homepage
-    const collectionLinks = navGroups
-        .flatMap((group) => group.tags || [])
-        .slice(0, 8)
-        .map((tag) => ({
-            label: tag.label,
-            href: `/collection/${tag.slug}`
-        }));
-
-    const categoryLinks = allCategories
-        .filter((cat) => cat.slug !== 'uncategorized' && cat.slug !== 'blog')
-        .slice(0, 8)
-        .map((cat) => ({
-            label: cat.name,
-            href: `/collection/${cat.slug}`
-        }));
-
-    const blogTagLinks = allTags.slice(0, 8).map((tag) => ({
-        label: tag.name,
-        href: `/articles?tag=${tag.slug}`
-    }));
-
-    const blogLinks = topPicks.slice(0, 13).map((post) => ({
-        label: post.title,
-        href: `/blog/${post.slug}`
-    }));
-
-    const footerSections = [
-        {
-            title: footerLabels.collections,
-            items:
-                collectionLinks.length > 0
-                    ? collectionLinks
-                    : [
-                          { label: 'All AI Tools', href: '/#reviews' },
-                          { label: 'Trending', href: '/#reviews' },
-                          { label: 'New Releases', href: '/#reviews' }
-                      ]
-        },
-        {
-            title: footerLabels.blogHighlights,
-            items: blogLinks.length > 0 ? blogLinks : [{ label: 'All Articles', href: '/articles' }]
-        },
-        {
-            title: footerLabels.topics,
-            items:
-                blogTagLinks.length > 0
-                    ? blogTagLinks
-                    : [
-                          { label: 'Guides', href: '/articles' },
-                          { label: 'Case Studies', href: '/articles' }
-                      ]
-        }
-    ];
 
     return (
         <div className="min-h-screen bg-gray-50">

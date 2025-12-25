@@ -516,7 +516,7 @@ export const TOOLS_BY_MODIFIED_QUERY = `
 // Only show posts from category "ai-review"
 export const TOOLS_BY_DATE_DESC_QUERY = `
   query ToolsByDateDesc {
-    posts(first: 30, where: { categoryName: "ai-review", orderby: { field: DATE, order: DESC } }) {
+    posts(where: { categoryName: "ai-review", orderby: { field: DATE, order: DESC } }) {
       nodes {
         id
         databaseId
@@ -610,6 +610,30 @@ export const LATEST_TOP_PICKS_QUERY = `
             }
           }
           authorBio
+        }
+      }
+    }
+  }
+`;
+
+// Blog posts with highlight field for footer
+// Note: Field name is "hightlight" (typo in WordPress schema)
+export const HIGHLIGHTED_BLOG_POSTS_QUERY = `
+  query HighlightedBlogPosts($first: Int = 15) {
+    posts(
+      first: $first
+      where: {
+        status: PUBLISH
+        categoryName: "blog"
+        orderby: [{ field: DATE, order: DESC }]
+      }
+    ) {
+      nodes {
+        id
+        slug
+        title
+        blog {
+          hightlight
         }
       }
     }

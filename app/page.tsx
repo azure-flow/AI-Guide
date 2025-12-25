@@ -38,7 +38,7 @@ import AIToolScrollSection from "./components/AIToolScrollSection";
 import ClientSideTagFilter from "./components/ClientSideTagFilter";
 import SiteFooter from "@/components/SiteFooter";
 import CategoryList from "@/components/CategoryList";
-import { getSiteBranding, getMegaphoneIcon, getFooterLabels } from "@/lib/branding";
+import { getSiteBranding, getMegaphoneIcon, getFooterSections } from "@/lib/branding";
 
 
 
@@ -273,8 +273,8 @@ export default async function HomePage({
   // Fetch megaphone icon for blue cards
   const megaphoneIcon = await getMegaphoneIcon();
 
-  // Fetch footer labels from CMS
-  const footerLabels = await getFooterLabels();
+  // Fetch footer sections
+  const footerSections = await getFooterSections();
 
   // Fetch ALL tools for client-side filtering (much faster tag switching)
   const allToolsData = await wpFetch<{ posts: { nodes: any[] } }>(
@@ -387,59 +387,6 @@ export default async function HomePage({
     };
   });
 
-  const collectionLinks = navGroups
-    .flatMap((group) => group.tags || [])
-    .slice(0, 8)
-    .map((tag) => ({
-      label: tag.label,
-      href: `/collection/${tag.slug}`,
-    }));
-
-  const categoryLinks = allCategories
-    .filter((cat) => cat.slug !== "uncategorized" && cat.slug !== "blog")
-    .slice(0, 8)
-    .map((cat) => ({
-      label: cat.name,
-      href: `/collection/${cat.slug}`,
-    }));
-
-  const blogTagLinks = allTags.slice(0, 8).map((tag) => ({
-    label: tag.name,
-    href: `/articles?tag=${tag.slug}`,
-  }));
-
-  const blogLinks = topPicks.slice(0, 13).map((post) => ({
-    label: post.title,
-    href: `/blog/${post.slug}`,
-  }));
-
-  const footerSections = [
-    {
-      title: footerLabels.collections,
-      items:
-        collectionLinks.length > 0
-          ? collectionLinks
-          : [
-              { label: "All AI Tools", href: "/#reviews" },
-              { label: "Trending", href: "/#reviews" },
-              { label: "New Releases", href: "/#reviews" },
-            ],
-    },
-    {
-      title: footerLabels.blogHighlights,
-      items: blogLinks.length > 0 ? blogLinks : [{ label: "All Articles", href: "/articles" }],
-    },
-    {
-      title: footerLabels.topics,
-      items:
-        blogTagLinks.length > 0
-          ? blogTagLinks
-          : [
-              { label: "Guides", href: "/articles" },
-              { label: "Case Studies", href: "/articles" },
-            ],
-    },
-  ];
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -456,7 +403,7 @@ export default async function HomePage({
         <Container>
           <div className="w-full max-w-none space-y-6">
             {/* Hero Box */}
-            <div className="relative rounded-3xl overflow-hidden shadow-lg h-[440px]">
+            <div className="relative rounded-3xl overflow-hidden shadow-lg h-[440px] mb-16">
               {/* Background: Image or gradient */}
               {HERO_BG_PATH ? (
                 <Image
@@ -473,7 +420,7 @@ export default async function HomePage({
               {/* Hero content */}
               <div className="relative z-20 h-full flex flex-col items-center justify-center text-center px-4 py-8">
                 <h1 className="text-5xl font-bold text-white mb-3">
-                  Cut Costs, Boost Efficiency By AI
+                  Cut Costs, Boost Efficiency<br/> By AI
                 </h1>
                 <p className="text-base text-white/95 max-w-[65ch] mx-auto">
                   Simplify daily operations and cut fixed expenses using AI-driven tools explained with insights, pricing, reviews, and clear guides.
@@ -490,7 +437,7 @@ export default async function HomePage({
       </section>
 
       {/* Categories Section */}
-      <section className="py-8">
+      <section className="pb-8">
         <Container>
           <div className="grid grid-cols-5 gap-y-4 justify-items-center">
             {categories.slice(0, 10).map((category) => (
@@ -551,7 +498,7 @@ export default async function HomePage({
           <h2 className="text-2xl font-bold text-center text-gray-800 mb-4 flex items-center justify-center gap-2">
             Trending
             <svg 
-              className="w-5 h-5 text-red-500" 
+              className="w-8 h-8 text-red-500" 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"

@@ -36,12 +36,12 @@ export default function AudienceCard({ title, bulletPoints = [], logo, whoisitfo
   const hasAnyDescriptions = bulletPoints.some(bullet => bullet.description);
 
   return (
-    <div className="bg-white rounded-xl overflow-visible shadow-sm border border-gray-200 relative">
+    <div className="bg-white rounded-xl overflow-visible shadow-sm border border-gray-200 relative h-fit">
       <div className="bg-blue-600 h-[89px] relative flex items-end justify-center pb-0 z-10 rounded-t-xl">
         <WhoIsItForLogo whoisitforlogo={whoisitforlogo} index={logoIndex} />
       </div>
       <div className="pt-[63px] p-5 relative z-0">
-        <h3 className="text-base font-bold text-center mb-4" style={{ color: '#1466F6' }}>{title}</h3>
+        <h3 className="text-base font-semibold text-center mb-4" style={{ color: '#1466F6' }}>{title}</h3>
         {bulletPoints.length > 0 ? (
           <>
             <ul className="space-y-3 text-xs text-gray-700">
@@ -49,7 +49,7 @@ export default function AudienceCard({ title, bulletPoints = [], logo, whoisitfo
                 <li key={idx} className="flex flex-col">
                   <div className="flex items-start gap-2">
                     <span className="w-1 h-1 bg-gray-700 rounded-full mt-1.5 flex-shrink-0"></span>
-                    <span className="font-semibold text-gray-900 break-words min-w-0 flex-1">{bullet.title}</span>
+                    <span className="font-medium text-gray-900 break-words min-w-0 flex-1">{bullet.title}</span>
                   </div>
                   {isExpanded && bullet.description && (
                     <p className="ml-3 text-gray-600 mt-1 break-words overflow-wrap-anywhere min-w-0">{bullet.description}</p>
@@ -57,10 +57,11 @@ export default function AudienceCard({ title, bulletPoints = [], logo, whoisitfo
                 </li>
               ))}
             </ul>
+            <hr className="my-4 border-gray-200" />
             {(hasMore || hasAnyDescriptions) && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="mt-4 text-blue-600 font-semibold text-sm flex items-center gap-1 w-full justify-center hover:underline"
+                className="mt-4 text-blue-600 text-[13px] font-medium flex items-center gap-1 w-full justify-start hover:underline"
               >
                 {isExpanded ? 'Show Less' : 'Show More'}
                 <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />

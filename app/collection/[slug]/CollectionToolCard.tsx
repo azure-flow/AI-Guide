@@ -232,25 +232,6 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
                     <p className="text-sm text-gray-600 leading-relaxed mb-3">
                       {cleanDescription}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>Share this:</span>
-                      <Link 
-                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(toolHref)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-blue-600 transition-colors"
-                      >
-                        X
-                      </Link>
-                      <Link 
-                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(toolHref)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-blue-600 transition-colors"
-                      >
-                        Facebook
-                      </Link>
-                    </div>
                   </div>
                 )}
 

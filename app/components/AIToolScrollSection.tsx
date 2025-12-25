@@ -146,7 +146,7 @@ export default function AIToolScrollSection({ cards, cardVariant = "compact" }: 
       {canScrollLeft && (
         <button
           onClick={scrollPrev}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-1.5 shadow-lg hover:bg-gray-50 transition-colors border border-gray-200 hidden md:flex items-center justify-center"
+          className="absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-1.5 shadow-lg hover:bg-gray-50 transition-colors border border-gray-200 hidden md:flex items-center justify-center"
           aria-label="Previous cards"
         >
           <ChevronLeft className="w-4 h-4 text-gray-700" />
@@ -197,7 +197,7 @@ export default function AIToolScrollSection({ cards, cardVariant = "compact" }: 
       {canScrollRight && (
         <button
           onClick={scrollNext}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-1.5 shadow-lg hover:bg-gray-50 transition-colors border border-gray-200 hidden md:flex items-center justify-center"
+          className="absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-1.5 shadow-lg hover:bg-gray-50 transition-colors border border-gray-200 hidden md:flex items-center justify-center"
           aria-label="Next cards"
         >
           <ChevronRight className="w-4 h-4 text-gray-700" />
