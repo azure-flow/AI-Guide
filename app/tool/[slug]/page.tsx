@@ -814,18 +814,24 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                             {/* Top Row: Video + Productivity Cards (same height) */}
                             <div className="grid grid-cols-12 gap-6 items-stretch">
                                 {/* Product Video - Left Column */}
-                                <div className="col-span-8 relative z-0">
-                                    {meta?.youtubeLink && (
+                                <div className="col-span-8 relative z-0 min-h-[360px]">
+                                    {meta?.youtubeLink ? (
                                         <div
                                             className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video relative z-0"
                                             dangerouslySetInnerHTML={{ __html: meta.youtubeLink }}
                                         />
+                                    ) : (
+                                        <div className="flex items-center justify-center w-full h-full min-h-[300px] rounded-lg shadow-lg border border-dashed border-gray-300 bg-gray-50">
+                                            <span className="text-gray-500 text-base font-medium p-8 text-center">
+                                                This area is reserved for the product video, but there is no video available right now.
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
 
                                 {/* Productivity Cards - Right Column (matches video height) */}
                                 <div className="col-span-4 flex">
-                                    {(meta?.boostedProductivity || meta?.lessManualWork) && (
+                                    {(meta?.boostedProductivity || meta?.lessManualWork) ? (
                                         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full h-full flex flex-col">
                                             {meta?.boostedProductivity && (
                                                 <div className="mb-4 pb-4 border-b border-gray-200 flex-1">
@@ -854,6 +860,12 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                                     </button>
                                                 </div>
                                             )}
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full h-full flex flex-col items-center justify-center text-center text-gray-500 min-h-[180px]">
+                                            <span className="text-base font-medium">
+                                                No productivity details available for this tool yet. Check back soon for more insight!
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -961,23 +973,35 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     >
                                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Tutorials</h2>
                                         <div className="grid grid-cols-3 gap-6">
-                                            {meta?.tutorialvid && (
-                                                <div
-                                                    className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
-                                                    dangerouslySetInnerHTML={{ __html: meta.tutorialvid }}
-                                                />
-                                            )}
-                                            {meta?.tutorialvid1 && (
-                                                <div
-                                                    className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
-                                                    dangerouslySetInnerHTML={{ __html: meta.tutorialvid1 }}
-                                                />
-                                            )}
-                                            {meta?.tutorialvid2 && (
-                                                <div
-                                                    className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
-                                                    dangerouslySetInnerHTML={{ __html: meta.tutorialvid2 }}
-                                                />
+                                            {meta?.tutorialvid || meta?.tutorialvid1 || meta?.tutorialvid2 ? (
+                                                <>
+                                                    {meta?.tutorialvid && (
+                                                        <div
+                                                            className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
+                                                            dangerouslySetInnerHTML={{ __html: meta.tutorialvid }}
+                                                        />
+                                                    )}
+                                                    {meta?.tutorialvid1 && (
+                                                        <div
+                                                            className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
+                                                            dangerouslySetInnerHTML={{ __html: meta.tutorialvid1 }}
+                                                        />
+                                                    )}
+                                                    {meta?.tutorialvid2 && (
+                                                        <div
+                                                            className="w-full rounded-lg shadow-lg border border-gray-200 overflow-hidden [&_iframe]:w-full [&_iframe]:aspect-video"
+                                                            dangerouslySetInnerHTML={{ __html: meta.tutorialvid2 }}
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="col-span-3 flex flex-col items-center justify-center text-center p-8 text-gray-500">
+                                                    <span className="text-lg font-semibold mb-2">No Tutorials Yet</span>
+                                                    <span className="text-sm">
+                                                        There are currently no tutorial videos available for this tool.<br />
+                                                        Check back soon for guides and walk-throughs, or contact us for help using this tool.
+                                                    </span>
+                                                </div>
                                             )}
                                         </div>
                                     </section>
