@@ -132,6 +132,25 @@ interface ToolData {
                     altText?: string;
                 };
             };
+            useCaseBlog?: {
+                nodes: Array<{
+                    id: string;
+                    databaseId: number;
+                    slug: string;
+                    title: string;
+                    excerpt: string;
+                    featuredImage?: {
+                        node: {
+                            sourceUrl: string;
+                            altText?: string;
+                        };
+                    };
+                    blog?: {
+                        previewBlogTitle?: string;
+                        previewBlogContent?: string;
+                    } | null;
+                }>;
+            } | null;
         };
         uri: string;
         tags?: {
@@ -1009,31 +1028,50 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                             </div>
 
                             {/* Use Case Section - Same width as other sections */}
-                            <div className="grid grid-cols-12 gap-6">
-                                <div className="col-span-12 lg:-ml-48">
-                                    <section
-                                        id="use-case"
-                                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-                                    >
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Use Case</h2>
-                                        <div className="prose max-w-none">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                                                1. The Power of Clear Communication
-                                            </h3>
-                                            <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                                                ChatGPT's effectiveness depends less on its hidden algorithms and more
-                                                on how precisely users communicate with it. A prompt is not merely a
-                                                question, it's a structured instruction defining context, role, and
-                                                outcome. When your message is clear and intentional, the model delivers
-                                                answers that are more accurate, coherent, and contextually relevant.
-                                            </p>
-                                            <button className="text-blue-600 font-semibold text-sm flex items-center gap-1">
-                                                Show More <ChevronDown className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </section>
+                            {meta?.useCaseBlog?.nodes?.[0] && (
+                                <div className="grid grid-cols-12 gap-6">
+                                    <div className="col-span-12 lg:-ml-48">
+                                        <section
+                                            id="use-case"
+                                            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+                                        >
+                                            <h2 className="text-2xl font-bold text-gray-900 mb-6">Use Case</h2>
+                                            <div className="prose max-w-none">
+                                                {(() => {
+                                                    const useCaseBlog = meta.useCaseBlog.nodes[0];
+                                                    // Use preview fields if available, otherwise fallback to title/excerpt
+                                                    const previewTitle = useCaseBlog.blog?.previewBlogTitle || useCaseBlog.title;
+                                                    const previewContent = useCaseBlog.blog?.previewBlogContent || useCaseBlog.excerpt;
+                                                    
+                                                    // Strip HTML tags from preview content
+                                                    const plainContent = previewContent
+                                                        ? previewContent.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+                                                        : '';
+                                                    
+                                                    return (
+                                                        <>
+                                                            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                                                                {previewTitle}
+                                                            </h3>
+                                                            {plainContent && (
+                                                                <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                                                                    {plainContent}
+                                                                </p>
+                                                            )}
+                                                            <Link
+                                                                href={`/blog/${useCaseBlog.slug}`}
+                                                                className="text-blue-600 font-semibold text-sm flex items-center gap-1 hover:text-blue-700 transition-colors"
+                                                            >
+                                                                Show More <ChevronDown className="w-4 h-4" />
+                                                            </Link>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </section>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Review and Related Posts Side by Side */}
                             <div className="grid grid-cols-12 gap-6 items-stretch">

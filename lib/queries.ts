@@ -260,6 +260,27 @@ export const POST_BY_SLUG_QUERY = `
         thumbsup {
           node { sourceUrl altText }
         }
+        useCaseBlog {
+          nodes {
+            ... on Post {
+              id
+              databaseId
+              slug
+              title
+              excerpt
+              featuredImage {
+                node {
+                  sourceUrl
+                  altText
+                }
+              }
+              blog {
+                previewBlogTitle
+                previewBlogContent
+              }
+            }
+          }
+        }
       }
       author {
         node {
