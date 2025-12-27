@@ -38,7 +38,7 @@ import AIToolScrollSection from "./components/AIToolScrollSection";
 import ClientSideTagFilter from "./components/ClientSideTagFilter";
 import SiteFooter from "@/components/SiteFooter";
 import CategoryList from "@/components/CategoryList";
-import { getSiteBranding, getMegaphoneIcon, getFooterSections } from "@/lib/branding";
+import { getSiteBranding, getMegaphoneIcon, getFooterSections, getTopCardSettings } from "@/lib/branding";
 
 
 
@@ -190,12 +190,30 @@ export default async function HomePage({
   
   // These all run at build time and cache the results
   const categoriesRaw = await getCategories();
-  // Sort categories: "new" first, then by count descending
-  const categories = [...categoriesRaw].sort((a, b) => {
-    if (a.id === 'new') return -1;
-    if (b.id === 'new') return 1;
-    return b.count - a.count;
-  });
+  
+  // Fetch top card settings for sorting
+  const topCardSettings = await getTopCardSettings();
+  
+  // Sort categories based on settings
+  let categories: Category[];
+  if (topCardSettings.sorting === 'title') {
+    // Sort alphabetically by name
+    categories = [...categoriesRaw].sort((a, b) => {
+      if (a.id === 'new') return -1;
+      if (b.id === 'new') return 1;
+      return a.name.localeCompare(b.name);
+    });
+  } else {
+    // Sort by count descending (default)
+    categories = [...categoriesRaw].sort((a, b) => {
+      if (a.id === 'new') return -1;
+      if (b.id === 'new') return 1;
+      return b.count - a.count;
+    });
+  }
+  
+  // Limit to displayAmount
+  categories = categories.slice(0, topCardSettings.displayAmount);
   const trendingPosts = await getTrendingTools();
   const newPosts = await getNewTools();
   // === TOP PICKS (straight fetch; no fallbacks) ===
@@ -440,12 +458,16 @@ export default async function HomePage({
       <section className="pb-8">
         <Container>
           <div className="grid grid-cols-5 gap-y-4 justify-items-center">
-            {categories.slice(0, 10).map((category) => (
+            {categories.map((category) => (
               <Link
                 key={category.id}
                 href={`/collection/${category.id}`}
-                className="bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md relative overflow-hidden"
-                style={{ width: '175px', height: '115px' }}
+                className="rounded-lg transition-colors shadow-md relative overflow-hidden hover:opacity-90"
+                style={{ 
+                  width: '175px', 
+                  height: '115px',
+                  backgroundColor: topCardSettings.bgColor
+                }}
               >
                 {/* Icon in top-left */}
                 <div className="absolute top-3 left-4">
@@ -459,11 +481,12 @@ export default async function HomePage({
                     />
                   ) : (
                     <svg 
-                      className="w-10 h-10 text-blue-300/60" 
+                      className="w-10 h-10 opacity-60" 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
                       strokeWidth="1.5"
+                      style={{ color: topCardSettings.textColor }}
                     >
                       <path 
                         strokeLinecap="round" 
@@ -481,9 +504,23 @@ export default async function HomePage({
                 </div>
                 {/* Left-aligned text */}
                 <div className="absolute left-4 top-14 right-3 flex flex-col">
-                  <h3 className="text-white text-base font-bold mb-0.5 truncate" title={category.name}>{category.name}</h3>
+                  <h3 
+                    className="font-bold mb-0.5 truncate" 
+                    title={category.name}
+                    style={{ 
+                      color: topCardSettings.textColor,
+                      fontSize: topCardSettings.fontSize
+                    }}
+                  >
+                    {category.name}
+                  </h3>
                   {category.id !== 'new' && (
-                    <p className="text-gray-400 text-[10px] tracking-wide">{category.count} LISTING</p>
+                    <p 
+                      className="text-[10px] tracking-wide opacity-70"
+                      style={{ color: topCardSettings.textColor }}
+                    >
+                      {category.count} LISTING
+                    </p>
                   )}
                 </div>
               </Link>

@@ -1011,3 +1011,16 @@ export const RANDOM_BLOG_POSTS_QUERY = `
     }
   }
 `;
+
+// Top Card Settings - Settings for category card display
+export const TOP_CARD_SETTINGS_QUERY = `
+  query TopCardSettings {
+    topCardSettings {
+      sorting
+      textColor
+      bgColor
+      fontSize
+      displayAmount
+    }
+  }
+`;

@@ -23,7 +23,7 @@ import CollectionSearchBarWrapper from './CollectionSearchBarWrapper';
 import { FilteredToolsProvider } from './FilteredToolsContext';
 import PrimaryHeader from '@/components/site-header/PrimaryHeader';
 import { buildNavGroups, NavMenuPostNode } from '@/lib/nav-groups';
-import { getSiteBranding, getMegaphoneIcon } from '@/lib/branding';
+import { getSiteBranding, getMegaphoneIcon, getTopCardSettings } from '@/lib/branding';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -130,7 +130,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
             ? wpFetch<ToolsData>(TOOLS_BY_DATE_DESC_QUERY, {}, { revalidate: 3600 })
             : wpFetch<ToolsData>(TOOLS_BY_TAG_QUERY, { tag: [slug] }, { revalidate: 3600 });
 
-    const [toolsData, allTagRes, navMenuRes, branding, tagsWithCountRes, allReviewsData, megaphoneIcon] =
+    const [toolsData, allTagRes, navMenuRes, branding, tagsWithCountRes, allReviewsData, megaphoneIcon, topCardSettings] =
         await Promise.all([
             toolsQuery.catch(() => ({
                 posts: { nodes: [] }
@@ -167,7 +167,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                     }>;
                 };
             }>(REVIEWS_BY_POST_ID_QUERY, {}, { revalidate: 3600 }).catch(() => ({ reviews: { nodes: [] } })),
-            getMegaphoneIcon()
+            getMegaphoneIcon(),
+            getTopCardSettings()
         ]);
 
     console.log(toolsData?.posts?.nodes?.length, 'toolsData');
@@ -195,13 +196,28 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
         });
     });
 
-    // Convert to array, sort: "new" first, then by count descending
+    // Convert to array, sort based on settings
     const tagsWithCountRaw = Array.from(tagMap.values());
-    const tagsWithCount = [...tagsWithCountRaw].sort((a, b) => {
-        if (a.slug === 'new') return -1;
-        if (b.slug === 'new') return 1;
-        return b.count - a.count;
-    });
+    let tagsWithCount: typeof tagsWithCountRaw;
+    
+    if (topCardSettings.sorting === 'title') {
+        // Sort alphabetically by name
+        tagsWithCount = [...tagsWithCountRaw].sort((a, b) => {
+            if (a.slug === 'new') return -1;
+            if (b.slug === 'new') return 1;
+            return a.name.localeCompare(b.name);
+        });
+    } else {
+        // Sort by count descending (default)
+        tagsWithCount = [...tagsWithCountRaw].sort((a, b) => {
+            if (a.slug === 'new') return -1;
+            if (b.slug === 'new') return 1;
+            return b.count - a.count;
+        });
+    }
+    
+    // Limit to displayAmount
+    tagsWithCount = tagsWithCount.slice(0, topCardSettings.displayAmount);
     const allReviews = allReviewsData?.reviews?.nodes ?? [];
 
     // Calculate average rating for each tool
@@ -297,12 +313,16 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                     <section className="py-8">
                         <Container>
                             <div className="grid grid-cols-5 gap-y-4 justify-items-center">
-                                {tagsWithCount.slice(0, 10).map((t) => (
+                                {tagsWithCount.map((t) => (
                                     <Link
                                         key={t.slug}
                                         href={`/collection/${t.slug}`}
-                                        className="bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md relative overflow-hidden"
-                                        style={{ width: '175px', height: '115px' }}
+                                        className="rounded-lg transition-colors shadow-md relative overflow-hidden hover:opacity-90"
+                                        style={{ 
+                                            width: '175px', 
+                                            height: '115px',
+                                            backgroundColor: topCardSettings.bgColor
+                                        }}
                                     >
                                         {/* Icon in top-left */}
                                         <div className="absolute top-3 left-4">
@@ -316,11 +336,12 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                                                 />
                                             ) : (
                                                 <svg
-                                                    className="w-10 h-10 text-blue-300/60"
+                                                    className="w-10 h-10 opacity-60"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
                                                     strokeWidth="1.5"
+                                                    style={{ color: topCardSettings.textColor }}
                                                 >
                                                     <path
                                                         strokeLinecap="round"
@@ -339,13 +360,22 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                                         {/* Left-aligned text */}
                                         <div className="absolute left-4 top-14 right-3 flex flex-col">
                                             <h3
-                                                className="text-white text-base font-bold mb-0.5 truncate"
+                                                className="font-bold mb-0.5 truncate"
                                                 title={t.name}
+                                                style={{ 
+                                                    color: topCardSettings.textColor,
+                                                    fontSize: topCardSettings.fontSize
+                                                }}
                                             >
                                                 {t.name}
                                             </h3>
                                             {t.slug !== 'new' && (
-                                                <p className="text-gray-400 text-[10px] tracking-wide">{t.count} LISTING</p>
+                                                <p 
+                                                    className="text-[10px] tracking-wide opacity-70"
+                                                    style={{ color: topCardSettings.textColor }}
+                                                >
+                                                    {t.count} LISTING
+                                                </p>
                                             )}
                                         </div>
                                     </Link>

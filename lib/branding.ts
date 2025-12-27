@@ -2,7 +2,7 @@
 // Helper to fetch site branding from WordPress sitelogo CPT
 
 import { wpFetch } from './wpclient';
-import { SITE_BRANDING_QUERY, FOOTER_SETTINGS_QUERY, FOOTER_SETTINGS_ALL_QUERY, TAGS_QUERY, HIGHLIGHTED_BLOG_POSTS_QUERY } from './queries';
+import { SITE_BRANDING_QUERY, FOOTER_SETTINGS_QUERY, FOOTER_SETTINGS_ALL_QUERY, TAGS_QUERY, HIGHLIGHTED_BLOG_POSTS_QUERY, TOP_CARD_SETTINGS_QUERY } from './queries';
 
 export interface SiteBranding {
   siteName: string;
@@ -323,5 +323,52 @@ export async function getFooterSections(): Promise<FooterSection[]> {
       items: topicLinks
     }
   ];
+}
+
+// Top Card Settings interface
+export interface TopCardSettings {
+  sorting: 'title' | 'amount';
+  textColor: string;
+  bgColor: string;
+  fontSize: string;
+  displayAmount: number;
+}
+
+// Get top card settings from WordPress
+export async function getTopCardSettings(): Promise<TopCardSettings> {
+  try {
+    const data = await wpFetch<{
+      topCardSettings?: {
+        sorting?: string;
+        textColor?: string;
+        bgColor?: string;
+        fontSize?: string;
+        displayAmount?: number;
+      };
+    }>(TOP_CARD_SETTINGS_QUERY, {}, { revalidate: 3600 });
+
+    if (data?.topCardSettings) {
+      return {
+        sorting: (data.topCardSettings.sorting === 'title' || data.topCardSettings.sorting === 'amount') 
+          ? data.topCardSettings.sorting 
+          : 'amount',
+        textColor: data.topCardSettings.textColor || '#ffffff',
+        bgColor: data.topCardSettings.bgColor || '#2563eb',
+        fontSize: data.topCardSettings.fontSize || '16px',
+        displayAmount: data.topCardSettings.displayAmount || 10
+      };
+    }
+  } catch (error) {
+    console.error('[Top Card Settings] Failed to load settings from WordPress:', error);
+  }
+
+  // Fallback to defaults
+  return {
+    sorting: 'amount',
+    textColor: '#ffffff',
+    bgColor: '#2563eb',
+    fontSize: '16px',
+    displayAmount: 10
+  };
 }
 
