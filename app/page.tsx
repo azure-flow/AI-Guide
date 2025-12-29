@@ -640,11 +640,12 @@ export default async function HomePage({
 
 // ============================================================================
 // ISR CONFIGURATION
-// Export revalidate to enable Incremental Static Regeneration
+// Force dynamic rendering to always fetch from WordPress
 // ============================================================================
 
-// Revalidate this page every hour (3600 seconds)
-export const revalidate = 3600;
+// Force dynamic rendering - always fetch fresh data from WordPress
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // No static caching - always fetch from WordPress
 
 // ============================================================================
 // METADATA FOR SEO

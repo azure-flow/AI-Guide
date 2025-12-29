@@ -404,7 +404,9 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
 // ISR CONFIGURATION
 // ============================================================================
 
-export const revalidate = 3600;
+// Force dynamic rendering - always fetch fresh data from WordPress
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // No static caching - always fetch from WordPress
 export const dynamicParams = true; // Allow dynamic params beyond static generation
 
 // ============================================================================

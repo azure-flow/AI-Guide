@@ -152,34 +152,39 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
     // Fetch all data in parallel for faster loading
     const tagSlugs = post.tags?.nodes?.map((t) => t.slug) ?? [];
 
-    const [relatedData, allTagRes, navTagsRes, navMenuRes, branding, topPicksRes, categoriesRes, footerSections] = await Promise.all([
-        tagSlugs.length > 0
-            ? wpFetch<{ posts: { nodes: any[] } }>(
-                  RELATED_POSTS_QUERY,
-                  { tags: tagSlugs, excludeId: post.id, first: 3 },
-                  { revalidate: 3600 }
-              ).catch(() => ({ posts: { nodes: [] } }))
-            : Promise.resolve({ posts: { nodes: [] } }),
-        wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
-        wpFetch<{ tags: { nodes: Array<{ id: string; name: string; slug: string; count: number }> } }>(
-            NAVIGATION_TAGS_QUERY,
-            { first: 3 },
-            { revalidate: 3600 }
-        ),
-        wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(NAV_MENU_POSTS_QUERY, { first: 200 }, { revalidate: 3600 }),
-        getSiteBranding(),
-        wpFetch<{ posts: { nodes: Array<{ title: string; slug: string }> } }>(
-            LATEST_TOP_PICKS_QUERY,
-            { first: 13 },
-            { revalidate: 3600 }
-        ).catch(() => ({ posts: { nodes: [] } })),
-        wpFetch<{ categories: { nodes: Array<{ name: string; slug: string }> } }>(
-            CATEGORIES_QUERY,
-            { first: 50 },
-            { revalidate: 3600 }
-        ).catch(() => ({ categories: { nodes: [] } })),
-        getFooterSections()
-    ]);
+    const [relatedData, allTagRes, navTagsRes, navMenuRes, branding, topPicksRes, categoriesRes, footerSections] =
+        await Promise.all([
+            tagSlugs.length > 0
+                ? wpFetch<{ posts: { nodes: any[] } }>(
+                      RELATED_POSTS_QUERY,
+                      { tags: tagSlugs, excludeId: post.id, first: 3 },
+                      { revalidate: 3600 }
+                  ).catch(() => ({ posts: { nodes: [] } }))
+                : Promise.resolve({ posts: { nodes: [] } }),
+            wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
+            wpFetch<{ tags: { nodes: Array<{ id: string; name: string; slug: string; count: number }> } }>(
+                NAVIGATION_TAGS_QUERY,
+                { first: 3 },
+                { revalidate: 3600 }
+            ),
+            wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(
+                NAV_MENU_POSTS_QUERY,
+                { first: 200 },
+                { revalidate: 3600 }
+            ),
+            getSiteBranding(),
+            wpFetch<{ posts: { nodes: Array<{ title: string; slug: string }> } }>(
+                LATEST_TOP_PICKS_QUERY,
+                { first: 13 },
+                { revalidate: 3600 }
+            ).catch(() => ({ posts: { nodes: [] } })),
+            wpFetch<{ categories: { nodes: Array<{ name: string; slug: string }> } }>(
+                CATEGORIES_QUERY,
+                { first: 50 },
+                { revalidate: 3600 }
+            ).catch(() => ({ categories: { nodes: [] } })),
+            getFooterSections()
+        ]);
 
     const relatedPosts = relatedData?.posts?.nodes ?? [];
     const allTags = allTagRes?.tags?.nodes ?? [];
@@ -426,7 +431,9 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
 // ISR CONFIGURATION
 // ============================================================================
 
-export const revalidate = 3600;
+// Force dynamic rendering - always fetch fresh data from WordPress
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // No static caching - always fetch from WordPress
 export const dynamicParams = true; // Allow dynamic params beyond static generation
 
 // ============================================================================// GENERATE STATIC PARAMS (Optional - for static generation of known blogs)

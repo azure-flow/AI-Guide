@@ -426,4 +426,6 @@ export const metadata = {
 // ISR CONFIGURATION
 // ============================================================================
 
-export const revalidate = 3600; // Revalidate every hour
+// Force dynamic rendering - always fetch fresh data from WordPress
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // No static caching - always fetch from WordPress

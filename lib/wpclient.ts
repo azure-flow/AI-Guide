@@ -1,7 +1,7 @@
 // lib/wpclient.ts
 // Resolve endpoint lazily to avoid failing the build at import time on Vercel
 function getWpEndpoint(): string {
-  const url = process.env.WP_GRAPHQL_ENDPOINT;
+  const url = process.env.WP_GRAPHQL_ENDPOINT || 'https://cms.ai-plaza.io/graphql';
   if (!url || url.trim() === '') {
     throw new Error('WP_GRAPHQL_ENDPOINT is not set');
   }
@@ -18,25 +18,16 @@ export async function wpFetch<T>(
   variables: Record<string, any> = {},
   opts: FetchOpts = {}
 ) {
-  const { revalidate = 60, tags } = opts;
+  const { revalidate = 0, tags } = opts; // Default to 0 for always fresh data
 
-  // Dev mode: disable caching for immediate updates
-  const isDev = process.env.NODE_ENV === 'development';
-  
-  // Clean cache policy: use one approach only
+  // Always fetch fresh data from WordPress (no caching)
+  // This ensures pages always get latest data and show errors when WordPress is down
   const fetchOpts: RequestInit = {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables }),
+    cache: "no-store", // Always fetch fresh - no caching
   };
-
-  if (isDev) {
-    // Option A: no cache (dev)
-    fetchOpts.cache = "no-store";
-  } else {
-    // Option B: ISR (prod)
-    fetchOpts.next = { revalidate, ...(tags ? { tags } : {}) };
-  }
 
   const endpoint = getWpEndpoint();
   
