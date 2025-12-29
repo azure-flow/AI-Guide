@@ -48,6 +48,12 @@ export async function wpFetch<T>(
     const res = await fetch(endpoint, { ...fetchOpts, signal: controller.signal });
     clearTimeout(timeoutId);
 
+    // Check if WordPress is down
+    if (!res.ok) {
+      const statusText = res.statusText || 'Unknown error';
+      throw new Error(`WordPress API error: ${res.status} ${statusText}. The WordPress server may be down.`);
+    }
+
     // Check content type before parsing
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
@@ -56,15 +62,24 @@ export async function wpFetch<T>(
     }
 
     const json = await res.json();
-    if (!res.ok || json.errors) {
-      throw new Error(JSON.stringify(json.errors ?? res.status));
+    if (json.errors) {
+      throw new Error(`WordPress GraphQL errors: ${JSON.stringify(json.errors)}`);
     }
+    
+    if (!json.data) {
+      throw new Error('WordPress API returned no data. The server may be down or misconfigured.');
+    }
+    
     return json.data as T;
   } catch (error: any) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      throw new Error('Request timeout: WordPress API did not respond within 30 seconds');
+      throw new Error('WordPress API timeout: Server did not respond within 30 seconds. The server may be down.');
     }
-    throw error;
+    // Re-throw with more context
+    if (error.message) {
+      throw error;
+    }
+    throw new Error(`WordPress API error: ${error.message || 'Unknown error'}`);
   }
 }
