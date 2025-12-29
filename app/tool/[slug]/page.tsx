@@ -1129,7 +1129,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                                 </div>
 
                                                 <Link
-                                                    href={`https://aitoolsite1020-vqchs.wpcomstaging.com/ai-tool-review/?tool=${
+                                                    href={`https://cms.ai-plaza.io/ai-tool-review/?tool=${
                                                         post.slug
                                                     }&toolName=${encodeURIComponent(post.title)}`}
                                                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors mb-3 text-xs w-full flex-shrink-0 text-center"
@@ -1150,7 +1150,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                                     No reviews yet. Be the first to review!
                                                 </p>
                                                 <Link
-                                                    href={`https://aitoolsite1020-vqchs.wpcomstaging.com/ai-tool-review/?tool=${
+                                                    href={`https://cms.ai-plaza.io/ai-tool-review/?tool=${
                                                         post.slug
                                                     }&toolName=${encodeURIComponent(post.title)}`}
                                                     className="inline-flex justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-xs"

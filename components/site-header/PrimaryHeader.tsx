@@ -147,7 +147,7 @@ export default function PrimaryHeader({
         </div>
 
         <Link
-          href="https://aitoolsite1020-vqchs.wpcomstaging.com/submit-a-review/"
+          href="https://cms.ai-plaza.io/submit-a-review/"
           className="inline-flex items-center rounded-full bg-[#2454FF] px-2 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-blue-900/30 transition hover:bg-blue-700 ml-auto self-center"
         >
           <span className="hidden sm:inline">Leave Review</span>

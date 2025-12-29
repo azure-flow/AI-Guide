@@ -3,7 +3,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'i0.wp.com' },
-      { protocol: 'https', hostname: 'aitoolsite1020-vqchs.wpcomstaging.com' },
+      { protocol: 'https', hostname: 'cms.ai-plaza.io' },
       {
         protocol: 'https',
         hostname: '**',

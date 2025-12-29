@@ -53,7 +53,7 @@ export default function SiteFooter({
               Articles
             </Link>
             <Link
-              href="https://aitoolsite1020-vqchs.wpcomstaging.com/submit-a-review/"
+              href="https://cms.ai-plaza.io/submit-a-review/"
               className="hover:text-white"
             >
               Submit Review
