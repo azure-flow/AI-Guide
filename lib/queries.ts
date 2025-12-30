@@ -830,6 +830,36 @@ export const BLOG_POST_BY_SLUG_QUERY = `
   }
 `;
 
+// Find AI tool that references this blog post in useCaseBlog
+// This query searches all AI tools to find one that has this blog in useCaseBlog
+export const TOOL_BY_BLOG_QUERY = `
+  query ToolByBlog($first: Int = 200) {
+    posts(
+      first: $first
+      where: { 
+        categoryName: "ai-review"
+        status: PUBLISH
+      }
+    ) {
+      nodes {
+        id
+        slug
+        title
+        aiToolMeta {
+          useCaseBlog {
+            nodes {
+              ... on Post {
+                id
+                slug
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 // All blog articles for articles collection page
 export const ALL_BLOG_ARTICLES_QUERY = `
   query AllBlogArticles($first: Int = 100, $after: String) {

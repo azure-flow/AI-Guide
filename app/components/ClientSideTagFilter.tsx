@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import AIToolCard from '@/components/AIToolCard';
+import { normalizeKeyFindings } from '@/lib/normalizers';
 
 interface Tag {
   id: string;
@@ -22,7 +23,7 @@ interface Tool {
         sourceUrl: string;
       };
     } | null;
-    keyFindings?: string | null;
+    keyFindingsRaw?: string | null;
     latestVersion?: string | null;
     latestUpdate?: string | null;
     pricing?: string | null;
@@ -116,16 +117,9 @@ export default function ClientSideTagFilter({ allTools, tags, initialTag = '' }:
         p?.featuredImage?.node?.sourceUrl ?? 
         null;
       const featuredImageUrl = p.featuredImage?.node?.sourceUrl ?? null;
-      const keyFindingsRaw = p.aiToolMeta?.keyFindings ?? null;
-      let keyFindings: string[] = [];
       
-      if (keyFindingsRaw) {
-        const parts = keyFindingsRaw.split(/\n\s*\n/).filter(x => x.trim() !== '');
-        keyFindings = parts.map(section => {
-          const lines = section.split(/\r?\n/).filter(ln => ln.trim() !== '');
-          return lines.length > 0 ? lines[0].trim() : '';
-        }).filter(x => x !== '');
-      }
+      // Use normalizeKeyFindings function (same as other components)
+      const keyFindings = normalizeKeyFindings(p);
 
       return {
         id: p.id,
@@ -157,7 +151,7 @@ export default function ClientSideTagFilter({ allTools, tags, initialTag = '' }:
     <>
       {/* Tag pills with scroll arrows */}
       <div className="relative mb-6">
-        <div className="flex items-center gap-2 justify-center">
+        <div className="flex items-center gap-2 justify-center py-3">
           {tags.length > 5 && canScrollLeft && (
             <button
               onClick={scrollLeft}
@@ -169,7 +163,7 @@ export default function ClientSideTagFilter({ allTools, tags, initialTag = '' }:
           )}
           <div
             ref={scrollContainerRef}
-            className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+            className="flex gap-2 overflow-x-auto scrollbar-hide"
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
@@ -189,7 +183,7 @@ export default function ClientSideTagFilter({ allTools, tags, initialTag = '' }:
                     "text-sm font-medium transition-colors",
                     isActive
                       ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-200"
                   ].join(" ")}
                   aria-current={isActive ? "page" : undefined}
                 >

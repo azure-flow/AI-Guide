@@ -12,7 +12,7 @@ export default function CategoryList({ navGroups }: CategoryListProps) {
   }
 
   return (
-    <section className="bg-white py-14">
+    <section className="py-14">
       <Container>
         <h2
           className="text-center mb-10"

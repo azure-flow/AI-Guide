@@ -16,7 +16,8 @@ import {
     ALL_BLOG_ARTICLES_QUERY,
     NAV_MENU_POSTS_QUERY,
     LATEST_TOP_PICKS_QUERY,
-    CATEGORIES_QUERY
+    CATEGORIES_QUERY,
+    TOOL_BY_BLOG_QUERY
 } from '../../../lib/queries';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -152,39 +153,59 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
     // Fetch all data in parallel for faster loading
     const tagSlugs = post.tags?.nodes?.map((t) => t.slug) ?? [];
 
-    const [relatedData, allTagRes, navTagsRes, navMenuRes, branding, topPicksRes, categoriesRes, footerSections] =
-        await Promise.all([
-            tagSlugs.length > 0
-                ? wpFetch<{ posts: { nodes: any[] } }>(
-                      RELATED_POSTS_QUERY,
-                      { tags: tagSlugs, excludeId: post.id, first: 3 },
-                      { revalidate: 3600 }
-                  ).catch(() => ({ posts: { nodes: [] } }))
-                : Promise.resolve({ posts: { nodes: [] } }),
-            wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
-            wpFetch<{ tags: { nodes: Array<{ id: string; name: string; slug: string; count: number }> } }>(
-                NAVIGATION_TAGS_QUERY,
-                { first: 3 },
-                { revalidate: 3600 }
-            ),
-            wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(
-                NAV_MENU_POSTS_QUERY,
-                { first: 200 },
-                { revalidate: 3600 }
-            ),
-            getSiteBranding(),
-            wpFetch<{ posts: { nodes: Array<{ title: string; slug: string }> } }>(
-                LATEST_TOP_PICKS_QUERY,
-                { first: 13 },
-                { revalidate: 3600 }
-            ).catch(() => ({ posts: { nodes: [] } })),
-            wpFetch<{ categories: { nodes: Array<{ name: string; slug: string }> } }>(
-                CATEGORIES_QUERY,
-                { first: 50 },
-                { revalidate: 3600 }
-            ).catch(() => ({ categories: { nodes: [] } })),
-            getFooterSections()
-        ]);
+    // Find the related AI tool that references this blog post
+    const [
+        relatedData,
+        allTagRes,
+        navTagsRes,
+        navMenuRes,
+        branding,
+        topPicksRes,
+        categoriesRes,
+        footerSections,
+        toolsData
+    ] = await Promise.all([
+        tagSlugs.length > 0
+            ? wpFetch<{ posts: { nodes: any[] } }>(
+                  RELATED_POSTS_QUERY,
+                  { tags: tagSlugs, excludeId: post.id, first: 3 },
+                  { revalidate: 3600 }
+              ).catch(() => ({ posts: { nodes: [] } }))
+            : Promise.resolve({ posts: { nodes: [] } }),
+        wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
+        wpFetch<{ tags: { nodes: Array<{ id: string; name: string; slug: string; count: number }> } }>(
+            NAVIGATION_TAGS_QUERY,
+            { first: 3 },
+            { revalidate: 3600 }
+        ),
+        wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(NAV_MENU_POSTS_QUERY, { first: 200 }, { revalidate: 3600 }),
+        getSiteBranding(),
+        wpFetch<{ posts: { nodes: Array<{ title: string; slug: string }> } }>(
+            LATEST_TOP_PICKS_QUERY,
+            { first: 13 },
+            { revalidate: 3600 }
+        ).catch(() => ({ posts: { nodes: [] } })),
+        wpFetch<{ categories: { nodes: Array<{ name: string; slug: string }> } }>(
+            CATEGORIES_QUERY,
+            { first: 50 },
+            { revalidate: 3600 }
+        ).catch(() => ({ categories: { nodes: [] } })),
+        getFooterSections(),
+        wpFetch<{
+            posts: {
+                nodes: Array<{
+                    id: string;
+                    slug: string;
+                    title: string;
+                    aiToolMeta?: {
+                        useCaseBlog?: {
+                            nodes: Array<{ id: string; slug: string }>;
+                        };
+                    };
+                }>;
+            };
+        }>(TOOL_BY_BLOG_QUERY, { first: 200 }, { revalidate: 3600 }).catch(() => ({ posts: { nodes: [] } }))
+    ]);
 
     const relatedPosts = relatedData?.posts?.nodes ?? [];
     const allTags = allTagRes?.tags?.nodes ?? [];
@@ -192,6 +213,13 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
     const navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
     const topPicks = topPicksRes?.posts?.nodes ?? [];
     const allCategories = categoriesRes?.categories?.nodes ?? [];
+
+    // Find the AI tool that references this blog post
+    const relatedTool = toolsData?.posts?.nodes?.find((tool) => {
+        const useCaseBlogs = tool.aiToolMeta?.useCaseBlog?.nodes ?? [];
+        return useCaseBlogs.some((blog: { id: string; slug: string }) => blog.id === post.id || blog.slug === slug);
+    });
+    const toolSlug = relatedTool?.slug || null;
 
     // Process related articles by similarity
     let recommendedArticles = relatedPosts
@@ -236,7 +264,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen">
             {/* Header - Same as home page */}
             <PrimaryHeader
                 tags={allTags}
@@ -263,10 +291,10 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
             </div>
 
             {/* Main Content */}
-            <section className="mx-auto max-w-[1120px] px-4 md:px-6 lg:px-8 py-10 md:py-14">
+            <section className="mx-auto max-w-[1120px] py-10 md:py-14">
                 <div className="flex flex-col items-center justify-center">
                     <div className="order-1 lg:order-2 lg:max-w-[1000px] mx-auto lg:mx-0">
-                        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+                        <div className="bg-white rounded-xl p-6 mb-6">
                             {post.categories?.nodes && post.categories.nodes.length > 0 && (
                                 <span className="inline-block text-blue-600 text-sm font-medium mb-4">
                                     {post.categories.nodes[0].name}
@@ -297,7 +325,66 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
                         </div>
 
                         {/* Article Content without White Background */}
-                        <article className="leading-7 text-[15.5px]">
+                        <article className={`leading-7 text-[15.5px] relative ${toolSlug ? 'pl-[250px]' : ''}`}>
+                            {toolSlug && (
+                                <nav className='w-fit absolute left-0 top-0 z-10'>
+                                    <h3 className="text-lg font-semibold text-gray-900 leading-tight border-b-[1px] broder-gray-400 pb-2 mb-6">Table of contents</h3>
+                                    <div className="hidden lg:block w-48 pointer-events-none">
+                                        <div className="sticky top-24 z-10 self-start pl-6 pr-6 py-2 pointer-events-auto">
+                                            <nav className="space-y-1">
+                                                <a
+                                                    href={`/tool/${toolSlug}#what-is`}
+                                                    className="block text-blue-600 hover:text-blue-800 font-medium py-2 text-sm"
+                                                >
+                                                    What is {relatedTool?.title || post.title}
+                                                </a>
+                                                <a
+                                                    href={`/tool/${toolSlug}#key-findings`}
+                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
+                                                >
+                                                    Key Feature
+                                                </a>
+                                                <a
+                                                    href={`/tool/${toolSlug}#who-is-it-for`}
+                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
+                                                >
+                                                    Who is it for
+                                                </a>
+                                                <a
+                                                    href={`/tool/${toolSlug}#tutorials`}
+                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
+                                                >
+                                                    Tutorials
+                                                </a>
+                                                <a
+                                                    href={`/tool/${toolSlug}#pricing`}
+                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
+                                                >
+                                                    Pricing
+                                                </a>
+                                                <a
+                                                    href={`/tool/${toolSlug}#review`}
+                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
+                                                >
+                                                    Review
+                                                </a>
+                                                <a
+                                                    href={`/tool/${toolSlug}#related-posts`}
+                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
+                                                >
+                                                    Related Posts
+                                                </a>
+                                                <a
+                                                    href={`/tool/${toolSlug}#alternatives`}
+                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
+                                                >
+                                                    Alternatives
+                                                </a>
+                                            </nav>
+                                        </div>
+                                    </div>
+                                </nav>
+                            )}
                             {featuredImageUrl && (
                                 <figure className="relative mt-2 overflow-hidden rounded-2xl ring-1 ring-black/10">
                                     <Image

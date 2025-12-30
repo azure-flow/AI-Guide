@@ -608,7 +608,7 @@ export default async function HomePage({
 
       <div className="space-y-10">
         {/* New AI Tools Section */}
-        <section className="py-10 bg-white">
+        <section className="py-10">
           <Container>
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
               {newToolsTitle}

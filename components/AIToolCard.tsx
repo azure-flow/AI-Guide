@@ -238,15 +238,6 @@ const AIToolCard: React.FC<AIToolCardProps> = ({
                         </div>
                     </div>
                 </div>
-                {/* Excerpt (HTML-safe) before image, under title+badges */}
-                {excerpt && (
-                    <div
-                        className={`text-gray-600 ${
-                            variant === 'compact' ? 'text-xs' : 'text-sm'
-                        } leading-relaxed line-clamp-2 ${variant === 'compact' ? 'mb-1' : 'mb-2'}`}
-                        dangerouslySetInnerHTML={{ __html: excerpt }}
-                    />
-                )}
                 {/* Version and Release Info - Top Right */}
                 {showVersionInfo && (
                     <div
@@ -265,6 +256,13 @@ const AIToolCard: React.FC<AIToolCardProps> = ({
                         ) : null}
                     </div>
                 )}
+                {/* Excerpt (HTML-safe) before image, under title+badges */}
+                <div
+                    className={`min-h-[40px] text-gray-600 ${
+                        variant === 'compact' ? 'text-xs' : 'text-sm'
+                    } leading-relaxed line-clamp-2 ${variant === 'compact' ? 'mb-1' : 'mb-2'}`}
+                    dangerouslySetInnerHTML={{ __html: excerpt || '' }}
+                />
             </div>
 
             {/* Screenshot image with 3D effect */}
