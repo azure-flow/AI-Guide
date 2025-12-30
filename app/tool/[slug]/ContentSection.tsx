@@ -7,9 +7,10 @@ interface ContentSectionProps {
   id: string;
   title: string;
   content: string | null;
+  className?: string;
 }
 
-export default function ContentSection({ id, title, content }: ContentSectionProps) {
+export default function ContentSection({ id, title, content, className }: ContentSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Remove unwanted "Share this" blocks that may be appended by WordPress content
@@ -33,7 +34,7 @@ export default function ContentSection({ id, title, content }: ContentSectionPro
   // If no content, show a message
   if (!cleanedContent || plainContent.length === 0) {
     return (
-      <section id={id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+      <section id={id} className={`bg-white rounded-xl p-6 shadow-sm border border-gray-200 ${className}`}>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
         <p className="text-gray-500 text-sm italic">No content available yet.</p>
       </section>
@@ -67,6 +68,7 @@ export default function ContentSection({ id, title, content }: ContentSectionPro
         }
         dangerouslySetInnerHTML={{ __html: cleanedContent }}
       />
+      <hr className="my-4 border-gray-200" />
       {hasLongContent && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}

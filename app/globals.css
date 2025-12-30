@@ -26,6 +26,10 @@ html { scroll-behavior: smooth; }
   display: block;
 }
 
+.prose .section-brand{
+  border-radius: none !important;
+}
+
 .prose ul > li {
   color: #3d3d3d;
 }

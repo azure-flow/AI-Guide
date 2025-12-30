@@ -62,7 +62,7 @@ export default function AudienceCard({
                                         </span>
                                     </div>
                                     {isExpanded && bullet.description && (
-                                        <p className="ml-3 text-gray-600 mt-1 break-words overflow-wrap-anywhere min-w-0">
+                                        <p className="ml-3 text-gray-600 mt-1 break-words overflow-wrap-anywhere min-w-0 mb-4">
                                             {bullet.description}
                                         </p>
                                     )}

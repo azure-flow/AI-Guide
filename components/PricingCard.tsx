@@ -55,15 +55,7 @@ export default function PricingCard({ name, price, features, icon = 'dollar' }: 
       <div className="mb-4 relative">
         <p className="text-2xl font-bold mb-3" style={{ marginTop: '-8px', marginLeft: '8px', color: '#404040' }}>{price}</p>
         {/* Thin line under the price */}
-        <div
-          className="border-t"
-          style={{
-            borderColor: '#EFEFEF',
-            borderWidth: '1px',
-            width: 'calc(100% - 48px)',
-            marginLeft: '12px'
-          }}
-        ></div>
+        <hr className="border-gray-200 mr-4" />
       </div>
       
       {/* It includes heading - matching typography settings */}

@@ -14,7 +14,8 @@ import {
     TOOLS_BY_TAG_QUERY,
     NAV_MENU_POSTS_QUERY,
     REVIEWS_BY_POST_ID_QUERY,
-    TOOLS_BY_DATE_DESC_QUERY
+    TOOLS_BY_DATE_DESC_QUERY,
+    ALL_TOOLS_QUERY
 } from '../../../lib/queries';
 import { wpFetch } from '../../../lib/wpclient';
 import Container from '../../(components)/Container';
@@ -177,6 +178,29 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
     const allTags = allTagRes?.tags?.nodes ?? [];
     const navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
     
+    // Get total count of all AI tools for "new" card
+    // For "new" slug, tools already contains all tools, so use that count
+    // For other slugs, we need to fetch all tools separately to get the total count
+    let totalAllToolsCount = 0;
+    if (slug === 'new') {
+        // For "new" slug, we already have all tools
+        totalAllToolsCount = tools.length;
+    } else {
+        // For other slugs, fetch all tools to get total count for "new" card display
+        try {
+            const allToolsData = await wpFetch<{ posts: { nodes: any[] } }>(
+                ALL_TOOLS_QUERY,
+                { first: 1000 },
+                { revalidate: 3600 }
+            );
+            totalAllToolsCount = allToolsData?.posts?.nodes?.length || 0;
+        } catch (error) {
+            console.error('Error fetching all tools count:', error);
+            // Fallback: use a reasonable estimate or 0
+            totalAllToolsCount = 0;
+        }
+    }
+    
     // Aggregate tags from ai-review posts and count occurrences
     const tagMap = new Map<string, { id: string; name: string; slug: string; count: number }>();
     
@@ -198,23 +222,33 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
 
     // Convert to array, sort based on settings
     const tagsWithCountRaw = Array.from(tagMap.values());
-    let tagsWithCount: typeof tagsWithCountRaw;
+    // Remove "new" from tags if it exists (we'll add it manually)
+    const filteredTags = tagsWithCountRaw.filter(t => t.slug !== 'new');
+    
+    let tagsWithCount: Array<{ id: string; name: string; slug: string; count: number }>;
     
     if (topCardSettings.sorting === 'title') {
         // Sort alphabetically by name
-        tagsWithCount = [...tagsWithCountRaw].sort((a, b) => {
-            if (a.slug === 'new') return -1;
-            if (b.slug === 'new') return 1;
+        tagsWithCount = [...filteredTags].sort((a, b) => {
             return a.name.localeCompare(b.name);
         });
     } else {
         // Sort by count descending (default)
-        tagsWithCount = [...tagsWithCountRaw].sort((a, b) => {
-            if (a.slug === 'new') return -1;
-            if (b.slug === 'new') return 1;
+        tagsWithCount = [...filteredTags].sort((a, b) => {
             return b.count - a.count;
         });
     }
+    
+    // Always add "new" card at the beginning with total tools count
+    tagsWithCount = [
+        {
+            id: 'new',
+            name: 'New',
+            slug: 'new',
+            count: totalAllToolsCount
+        },
+        ...tagsWithCount
+    ];
     
     // Limit to displayAmount
     tagsWithCount = tagsWithCount.slice(0, topCardSettings.displayAmount);
@@ -369,14 +403,12 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                                             >
                                                 {t.name}
                                             </h3>
-                                            {t.slug !== 'new' && (
-                                                <p 
-                                                    className="text-[10px] tracking-wide opacity-70"
-                                                    style={{ color: topCardSettings.textColor }}
-                                                >
-                                                    {t.count} LISTING
-                                                </p>
-                                            )}
+                                            <p 
+                                                className="text-[10px] tracking-wide opacity-70"
+                                                style={{ color: topCardSettings.textColor }}
+                                            >
+                                                {t.count} LISTING
+                                            </p>
                                         </div>
                                     </Link>
                                 ))}

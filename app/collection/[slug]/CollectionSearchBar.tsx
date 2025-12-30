@@ -172,7 +172,7 @@ export default function CollectionSearchBar({
   return (
     <form onSubmit={handleSubmit} className="relative w-full max-w-3xl mx-auto">
       <div className="relative">
-        <div className="flex min-h-[3rem] w-full items-center gap-2 rounded-full bg-white px-4 py-2 pr-32 shadow ring-1 ring-gray-200 focus-within:ring-2 focus-within:ring-blue-500">
+        <div className="flex min-h-[3rem] w-full items-center gap-2 rounded-xl bg-white px-4 py-4 pr-32 shadow ring-1 ring-gray-200 focus-within:ring-2 focus-within:ring-blue-500">
           {/* Selected tags as chips */}
           {selectedTags.map((tag) => (
             <span
@@ -195,17 +195,17 @@ export default function CollectionSearchBar({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={selectedTags.length === 0 ? "Search by tag (e.g. marketing, coder)" : "Add another tag..."}
-            className="flex-1 border-none bg-transparent text-gray-900 outline-none placeholder:text-gray-400"
+            className="flex-1 border-none bg-transparent text-gray-900 outline-none placeholder:text-gray-400 px-4"
             aria-label="Search tags"
           />
         </div>
         
         <button
           type="submit"
-          className="absolute top-1/2 right-2 -translate-y-1/2 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          className="absolute top-1/2 right-10 -translate-y-1/2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-[7px] text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
         >
           <Search className="h-4 w-4" strokeWidth={2.5} />
-          <span>Search</span>
+          <span className="pb-1">Search</span>
         </button>
       </div>
 

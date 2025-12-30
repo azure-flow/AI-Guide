@@ -537,7 +537,7 @@ export const TOOLS_BY_MODIFIED_QUERY = `
 // Only show posts from category "ai-review"
 export const TOOLS_BY_DATE_DESC_QUERY = `
   query ToolsByDateDesc {
-    posts(where: { categoryName: "ai-review", orderby: { field: DATE, order: DESC } }) {
+    posts(where: { categoryName: "ai-review", orderby: { field: DATE, order: DESC } } first: 1000) {
       nodes {
         id
         databaseId

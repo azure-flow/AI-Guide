@@ -202,36 +202,43 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
     const firstTag = post.tags?.nodes?.[0];
 
     // Fetch all independent data in parallel for faster page load
-    const [allTagRes, navMenuRes, branding, reviewsData, relatedData, topPicksRes, categoriesRes, footerSections] = await Promise.all([
-        wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
-        wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(NAV_MENU_POSTS_QUERY, { first: 200 }, { revalidate: 3600 }),
-        getSiteBranding(),
-        wpFetch<ReviewsData>(REVIEWS_BY_POST_ID_QUERY, { postId: post.databaseId }, { revalidate: 3600 }).catch(() => ({
-            reviews: { nodes: [] }
-        })),
-        firstTag
-            ? wpFetch<{ posts: { nodes: any[] } }>(
-                  RELATED_POSTS_QUERY,
-                  {
-                      tags: [firstTag.slug],
-                      excludeId: post.id,
-                      first: 10
-                  },
-                  { revalidate: 3600 }
-              ).catch(() => ({ posts: { nodes: [] } }))
-            : Promise.resolve({ posts: { nodes: [] } }),
-        wpFetch<{ posts: { nodes: Array<{ title: string; slug: string }> } }>(
-            LATEST_TOP_PICKS_QUERY,
-            { first: 13 },
-            { revalidate: 3600 }
-        ).catch(() => ({ posts: { nodes: [] } })),
-        wpFetch<{ categories: { nodes: Array<{ name: string; slug: string }> } }>(
-            CATEGORIES_QUERY,
-            { first: 50 },
-            { revalidate: 3600 }
-        ).catch(() => ({ categories: { nodes: [] } })),
-        getFooterSections()
-    ]);
+    const [allTagRes, navMenuRes, branding, reviewsData, relatedData, topPicksRes, categoriesRes, footerSections] =
+        await Promise.all([
+            wpFetch<{ tags: { nodes: { name: string; slug: string }[] } }>(ALL_TAG_SLUGS, {}, { revalidate: 3600 }),
+            wpFetch<{ posts: { nodes: NavMenuPostNode[] } }>(
+                NAV_MENU_POSTS_QUERY,
+                { first: 200 },
+                { revalidate: 3600 }
+            ),
+            getSiteBranding(),
+            wpFetch<ReviewsData>(REVIEWS_BY_POST_ID_QUERY, { postId: post.databaseId }, { revalidate: 3600 }).catch(
+                () => ({
+                    reviews: { nodes: [] }
+                })
+            ),
+            firstTag
+                ? wpFetch<{ posts: { nodes: any[] } }>(
+                      RELATED_POSTS_QUERY,
+                      {
+                          tags: [firstTag.slug],
+                          excludeId: post.id,
+                          first: 10
+                      },
+                      { revalidate: 3600 }
+                  ).catch(() => ({ posts: { nodes: [] } }))
+                : Promise.resolve({ posts: { nodes: [] } }),
+            wpFetch<{ posts: { nodes: Array<{ title: string; slug: string }> } }>(
+                LATEST_TOP_PICKS_QUERY,
+                { first: 13 },
+                { revalidate: 3600 }
+            ).catch(() => ({ posts: { nodes: [] } })),
+            wpFetch<{ categories: { nodes: Array<{ name: string; slug: string }> } }>(
+                CATEGORIES_QUERY,
+                { first: 50 },
+                { revalidate: 3600 }
+            ).catch(() => ({ categories: { nodes: [] } })),
+            getFooterSections()
+        ]);
 
     const allTags = allTagRes?.tags?.nodes ?? [];
     const navGroups = buildNavGroups(navMenuRes?.posts?.nodes ?? []);
@@ -623,7 +630,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
     // Build footer sections similar to homepage
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-[#FCFCFF]">
             <PrimaryHeader
                 tags={allTags}
                 navGroups={navGroups}
@@ -650,9 +657,9 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                 <section className="bg-gray-50 py-6">
                     <div className="max-w-6xl mx-auto px-6 lg:pl-24 lg:pr-8">
                         {/* Main Grid: Left (Logo/Title/Overview) + Right (Image) */}
-                        <div className="grid grid-cols-12 gap-3 items-start">
+                        <div className="grid grid-cols-12 gap-8 items-start">
                             {/* Left Column: Logo, Title, Overview, Tags */}
-                            <div className="col-span-7">
+                            <div className="col-span-7 pr-4">
                                 {/* Logo, Title, and Visit Website Button */}
                                 <div className="flex items-start gap-4 mb-6">
                                     {/* Logo */}
@@ -695,12 +702,12 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     <h2 className="text-xl font-bold text-gray-900 mb-3">Overview</h2>
                                     {meta?.overview ? (
                                         <div
-                                            className="prose max-w-none text-gray-600 text-xs leading-relaxed mb-4"
+                                            className="prose max-w-none text-gray-600 text-xs leading-relaxed mb-4 line-clamp-12 max-h-[210px] overflow-hidden"
                                             dangerouslySetInnerHTML={{ __html: meta.overview }}
                                         />
                                     ) : post.excerpt ? (
                                         <div
-                                            className="prose max-w-none text-gray-600 text-xs leading-relaxed mb-4"
+                                            className="prose max-w-none text-gray-600 text-xs leading-relaxed mb-4 line-clamp-12 max-h-[210px] overflow-hidden"
                                             dangerouslySetInnerHTML={{ __html: post.excerpt }}
                                         />
                                     ) : (
@@ -778,11 +785,11 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
             </main>
 
             {/* Main Content */}
-            <div className="max-w-6xl mx-auto px-6 lg:pl-24 lg:pr-8 py-8 bg-gray-50">
+            <div className="max-w-6xl mx-auto px-6 lg:pl-24 lg:pr-8 py-8 bg-[#FCFCFF]">
                 <div className="relative">
                     {/* Left Column - Page Navigation - Absolutely positioned */}
                     <div className="hidden lg:block w-48 absolute left-0 top-0 z-10 pointer-events-none">
-                        <div className="sticky top-24 z-10 self-start pl-6 pr-6 py-2 bg-gray-50 pointer-events-auto">
+                        <div className="sticky top-24 z-10 self-start pl-6 pr-6 py-2 pointer-events-auto">
                             <nav className="space-y-1">
                                 <a
                                     href="#what-is"
@@ -842,7 +849,8 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     ) : (
                                         <div className="flex items-center justify-center w-full h-full min-h-[300px] rounded-lg shadow-lg border border-dashed border-gray-300 bg-gray-50">
                                             <span className="text-gray-500 text-base font-medium p-8 text-center">
-                                                This area is reserved for the product video, but there is no video available right now.
+                                                This area is reserved for the product video, but there is no video
+                                                available right now.
                                             </span>
                                         </div>
                                     )}
@@ -850,7 +858,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
 
                                 {/* Productivity Cards - Right Column (matches video height) */}
                                 <div className="col-span-4 flex">
-                                    {(meta?.boostedProductivity || meta?.lessManualWork) ? (
+                                    {meta?.boostedProductivity || meta?.lessManualWork ? (
                                         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full h-full flex flex-col">
                                             {meta?.boostedProductivity && (
                                                 <div className="mb-4 pb-4 border-b border-gray-200 flex-1">
@@ -883,7 +891,8 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     ) : (
                                         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full h-full flex flex-col items-center justify-center text-center text-gray-500 min-h-[180px]">
                                             <span className="text-base font-medium">
-                                                No productivity details available for this tool yet. Check back soon for more insight!
+                                                No productivity details available for this tool yet. Check back soon for
+                                                more insight!
                                             </span>
                                         </div>
                                     )}
@@ -893,48 +902,53 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                             {/* Bottom Row: What is Gemini + Product Info (aligned) */}
                             <div className="grid grid-cols-12 gap-6">
                                 {/* What is ChatGPT Section - Left Column - Aligned with navigation left edge */}
-                                <div className="col-span-8 lg:-ml-48">
+                                <div className="col-span-7 lg:-ml-48">
                                     <ContentSection
                                         id="what-is"
                                         title={`What is ${post.title}`}
                                         content={post.content}
+                                        className="h-full"
                                     />
                                 </div>
 
                                 {/* Product Info Card - Right Column - Aligned with What is Gemini */}
-                                <div className="col-span-4">
-                                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                                        <div className="space-y-2.5 text-xs">
-                                            {meta?.publishedDate && (
-                                                <InfoRow label="Published" value={meta.publishedDate} />
-                                            )}
-                                            {meta?.latestUpdate && (
-                                                <InfoRow label="Latest Update" value={meta.latestUpdate} />
-                                            )}
-                                            {meta?.latestVersion && (
-                                                <InfoRow label="Latest Version" value={meta.latestVersion} />
-                                            )}
-                                            {meta?.productWebsite && (
-                                                <InfoRow
-                                                    label="Product Website"
-                                                    value={meta.seller || 'Gemini'}
-                                                    link={meta.productWebsite}
-                                                />
-                                            )}
-                                            {meta?.seller && (
-                                                <InfoRow
-                                                    label="Seller"
-                                                    value={meta.seller}
-                                                    link={meta.productWebsite}
-                                                />
-                                            )}
-                                            {meta?.discussionUrl && (
-                                                <InfoRow
-                                                    label="Discussions"
-                                                    value="Community"
-                                                    link={meta.discussionUrl}
-                                                />
-                                            )}
+                                <div className="col-span-5">
+                                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 h-full flex items-center justify-center">
+                                        <div className="flex flex-row gap-10">
+                                            <div className="space-y-2.5 text-xs">
+                                                {meta?.publishedDate && (
+                                                    <InfoRow label="Published" value={meta.publishedDate} />
+                                                )}
+                                                {meta?.latestUpdate && (
+                                                    <InfoRow label="Latest Update" value={meta.latestUpdate} />
+                                                )}
+                                                {meta?.latestVersion && (
+                                                    <InfoRow label="Latest Version" value={meta.latestVersion} />
+                                                )}
+                                            </div>
+                                            <div className="space-y-2.5 text-xs">
+                                                {meta?.productWebsite && (
+                                                    <InfoRow
+                                                        label="Product Website"
+                                                        value={meta.seller || 'Gemini'}
+                                                        link={meta.productWebsite}
+                                                    />
+                                                )}
+                                                {meta?.seller && (
+                                                    <InfoRow
+                                                        label="Seller"
+                                                        value={meta.seller}
+                                                        link={meta.productWebsite}
+                                                    />
+                                                )}
+                                                {meta?.discussionUrl && (
+                                                    <InfoRow
+                                                        label="Discussions"
+                                                        value="Community"
+                                                        link={meta.discussionUrl}
+                                                    />
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -982,6 +996,23 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     <PricingSection pricingModels={pricingModels} />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-12 gap-6 mb-5">
+                                <div className="col-span-12 lg:-ml-48">
+                                    <div className="flex flex-row justify-center items-center">
+                                        {meta?.productWebsite && (
+                                            <a
+                                                href={meta.productWebsite}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-20 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] font-medium transition-colors text-lg"
+                                            >
+                                                Visit Website
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Tutorials Section - Same width as Pricing */}
                             <div className="grid grid-cols-12 gap-6">
@@ -1017,8 +1048,10 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                                 <div className="col-span-3 flex flex-col items-center justify-center text-center p-8 text-gray-500">
                                                     <span className="text-lg font-semibold mb-2">No Tutorials Yet</span>
                                                     <span className="text-sm">
-                                                        There are currently no tutorial videos available for this tool.<br />
-                                                        Check back soon for guides and walk-throughs, or contact us for help using this tool.
+                                                        There are currently no tutorial videos available for this tool.
+                                                        <br />
+                                                        Check back soon for guides and walk-throughs, or contact us for
+                                                        help using this tool.
                                                     </span>
                                                 </div>
                                             )}
@@ -1040,14 +1073,19 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                                 {(() => {
                                                     const useCaseBlog = meta.useCaseBlog.nodes[0];
                                                     // Use preview fields if available, otherwise fallback to title/excerpt
-                                                    const previewTitle = useCaseBlog.blog?.previewBlogTitle || useCaseBlog.title;
-                                                    const previewContent = useCaseBlog.blog?.previewBlogContent || useCaseBlog.excerpt;
-                                                    
+                                                    const previewTitle =
+                                                        useCaseBlog.blog?.previewBlogTitle || useCaseBlog.title;
+                                                    const previewContent =
+                                                        useCaseBlog.blog?.previewBlogContent || useCaseBlog.excerpt;
+
                                                     // Strip HTML tags from preview content
                                                     const plainContent = previewContent
-                                                        ? previewContent.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+                                                        ? previewContent
+                                                              .replace(/<[^>]+>/g, '')
+                                                              .replace(/\s+/g, ' ')
+                                                              .trim()
                                                         : '';
-                                                    
+
                                                     return (
                                                         <>
                                                             <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -1213,19 +1251,19 @@ function TabLink({ href, children, active = false }: { href: string; children: R
 
 function InfoRow({ label, value, link }: { label: string; value: string; link?: string }) {
     return (
-        <div className="flex justify-between items-start border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
-            <span className="text-gray-600 text-xs">{label}</span>
+        <div className="flex flex-col justify-between items-start pb-2 last:border-b-0 last:pb-0">
+            <span className="text-sm text-gray-900 font-bold">{label}</span>
             {link ? (
                 <a
                     href={link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline font-medium text-xs"
+                    className="text-blue-600 hover:underline text-xs"
                 >
                     {value}
                 </a>
             ) : (
-                <span className="text-gray-900 font-medium text-xs">{value}</span>
+                <span className="text-gray-600 font-medium text-xs">{value}</span>
             )}
         </div>
     );

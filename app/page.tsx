@@ -83,6 +83,21 @@ interface TopPick {
 async function getCategories(): Promise<Category[]> {
   // Fetch real tags from WordPress - only tags used in ai-review category
   try {
+    // Fetch all AI tools to get total count for "new" card
+    const allToolsData = await wpFetch<{ 
+      posts: { 
+        nodes: Array<any>
+      } 
+    }>(
+      ALL_TOOLS_QUERY,
+      { first: 1000 }, // Get all tools to count them
+      { revalidate: 3600 }
+    );
+    const totalToolsCount = allToolsData?.posts?.nodes?.length || 0;
+
+    console.log(totalToolsCount, 'totalToolsCount');
+
+    // Fetch tags from posts
     const postsData = await wpFetch<{ 
       posts: { 
         nodes: Array<{ 
@@ -116,21 +131,34 @@ async function getCategories(): Promise<Category[]> {
       });
     });
 
-    // Convert to array, sort by count descending, and take first 10
+    // Convert to array, sort by count descending
     const tags = Array.from(tagMap.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .sort((a, b) => b.count - a.count);
 
     // Map WordPress tags to category format, using slug as id
-    return tags.map(tag => ({
+    const categories = tags.map(tag => ({
       id: tag.slug,  // Use slug as id for URL
       name: tag.name,
       count: tag.count
     }));
+
+    // Always add "new" card at the beginning with total tools count
+    // Check if "new" already exists in categories, if so remove it first
+    const filteredCategories = categories.filter(cat => cat.id !== 'new');
+    
+    return [
+      {
+        id: 'new',
+        name: 'New',
+        count: totalToolsCount
+      },
+      ...filteredCategories
+    ];
   } catch (error) {
     console.error('Error fetching categories:', error);
-    // Fallback to mock data if WordPress fails
+    // Fallback - always include "new" card even on error
     return [
+      { id: 'new', name: 'New', count: 0 },
       { id: 'marketing', name: 'Marketing', count: 0 },
       { id: 'business', name: 'Business', count: 0 },
       { id: 'productivity', name: 'Productivity', count: 0 }
@@ -462,7 +490,7 @@ export default async function HomePage({
               <Link
                 key={category.id}
                 href={`/collection/${category.id}`}
-                className="rounded-lg transition-colors shadow-md relative overflow-hidden hover:opacity-90"
+                className="px-[20px] py-[10px] rounded-lg transition-colors shadow-md relative overflow-hidden hover:opacity-90"
                 style={{ 
                   width: '175px', 
                   height: '115px',
@@ -470,7 +498,7 @@ export default async function HomePage({
                 }}
               >
                 {/* Icon in top-left */}
-                <div className="absolute top-3 left-4">
+                <div className="">
                   {megaphoneIcon ? (
                     <Image
                       src={megaphoneIcon.sourceUrl}
@@ -503,7 +531,7 @@ export default async function HomePage({
                   )}
                 </div>
                 {/* Left-aligned text */}
-                <div className="absolute left-4 top-14 right-3 flex flex-col">
+                <div className="">
                   <h3 
                     className="font-bold mb-0.5 truncate" 
                     title={category.name}
@@ -514,14 +542,12 @@ export default async function HomePage({
                   >
                     {category.name}
                   </h3>
-                  {category.id !== 'new' && (
-                    <p 
-                      className="text-[10px] tracking-wide opacity-70"
-                      style={{ color: topCardSettings.textColor }}
-                    >
-                      {category.count} LISTING
-                    </p>
-                  )}
+                  <p 
+                    className="text-[10px] tracking-wide opacity-70"
+                    style={{ color: topCardSettings.textColor }}
+                  >
+                    {category.count} LISTING
+                  </p>
                 </div>
               </Link>
             ))}

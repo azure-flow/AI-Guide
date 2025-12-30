@@ -199,7 +199,7 @@ export default function BlogScrollSection({ posts }: BlogScrollSectionProps) {
   return (
     <section className="py-8 md:py-12">
       <Container>
-        <div className="mb-6 md:mb-12 text-center">
+        <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-800">Explore Our Blogs</h2>
         </div>
 
