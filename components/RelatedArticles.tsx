@@ -18,9 +18,11 @@ type PostLite = {
 };
 
 export default async function RelatedArticles({
+  className,
   currentId,
   tagSlugs,
 }: {
+  className?: string;
   currentId: string;
   tagSlugs: string[];
 }) {
@@ -48,7 +50,7 @@ export default async function RelatedArticles({
     html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 
   return (
-    <section aria-labelledby="related-articles" className="not-prose mt-16 sm:mt-20">
+    <section aria-labelledby="related-articles" className={`not-prose mt-16 sm:mt-20 ${className}`}>
       <div className="relative left-1/2 -translate-x-1/2 w-[min(88rem,92vw)] px-6 md:px-8">
         <h2
           id="related-articles"

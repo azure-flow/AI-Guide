@@ -275,7 +275,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
 
             {/* Breadcrumb */}
             <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-6 py-3">
+                <div className="max-w-[1120px] mx-auto px-6 py-3">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Link href="/" className="hover:text-blue-600 flex items-center gap-1 flex-shrink-0">
                             <Home className="w-4 h-4" />
@@ -294,7 +294,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
             <section className="mx-auto max-w-[1120px] py-10 md:py-14">
                 <div className="flex flex-col items-center justify-center">
                     <div className="order-1 lg:order-2 lg:max-w-[1000px] mx-auto lg:mx-0">
-                        <div className="bg-white rounded-xl p-6 mb-6">
+                        <div className="bg-white rounded-xl py-6 mb-12">
                             {post.categories?.nodes && post.categories.nodes.length > 0 && (
                                 <span className="inline-block text-blue-600 text-sm font-medium mb-4">
                                     {post.categories.nodes[0].name}
@@ -327,10 +327,12 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
                         {/* Article Content without White Background */}
                         <article className={`leading-7 text-[15.5px] relative ${toolSlug ? 'pl-[250px]' : ''}`}>
                             {toolSlug && (
-                                <nav className='w-fit absolute left-0 top-0 z-10'>
-                                    <h3 className="text-lg font-semibold text-gray-900 leading-tight border-b-[1px] broder-gray-400 pb-2 mb-6">Table of contents</h3>
+                                <nav className="w-fit absolute left-0 top-0 z-10">
+                                    <h3 className="text-[15px] font-semibold text-gray-900 leading-tight border-b-[1px] broder-gray-400 pb-2 mb-6">
+                                        Table of contents
+                                    </h3>
                                     <div className="hidden lg:block w-48 pointer-events-none">
-                                        <div className="sticky top-24 z-10 self-start pl-6 pr-6 py-2 pointer-events-auto">
+                                        <div className="sticky top-24 z-10 self-start pr-6 py-2 pointer-events-auto">
                                             <nav className="space-y-1">
                                                 <a
                                                     href={`/tool/${toolSlug}#what-is`}
@@ -439,6 +441,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
                             )}
 
                             <RelatedArticles
+                                className={`${toolSlug ? 'ml-[-200px]' : ''}`}
                                 currentId={post.id}
                                 tagSlugs={post.tags?.nodes?.map((t) => t.slug).filter(Boolean) ?? []}
                             />
