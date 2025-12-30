@@ -44,7 +44,7 @@ export default function PricingSection({ pricingModels = [] }: PricingSectionPro
   };
 
   return (
-    <section id="pricing" className="bg-white rounded-xl shadow-sm border border-gray-200" style={{ padding: '24px' }}>
+    <section id="pricing" className="bg-white rounded-xl shadow-sm border border-gray-200 py-6 px-1">
       {showCarousel ? (
         <div className="relative">
           {/* Navigation Buttons */}

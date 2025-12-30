@@ -39,10 +39,10 @@ export default function PricingCard({ name, price, features, icon = 'dollar' }: 
   };
 
   return (
-    <div className="flex flex-col relative" style={{ paddingLeft: '12px' }}>
+    <div className="flex flex-col relative px-8">
       {/* Blue circular icon and pricing model label + plan name */}
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
           {getIcon()}
         </div>
         <div className="flex flex-col">
@@ -53,9 +53,9 @@ export default function PricingCard({ name, price, features, icon = 'dollar' }: 
       
       {/* Price - large and bold, positioned higher and slightly to the right */}
       <div className="mb-4 relative">
-        <p className="text-2xl font-bold mb-3" style={{ marginTop: '-8px', marginLeft: '8px', color: '#404040' }}>{price}</p>
+        <p className="text-2xl font-bold mb-6" style={{ marginTop: '-8px', color: '#404040' }}>{price}</p>
         {/* Thin line under the price */}
-        <hr className="border-gray-200 mr-4" />
+        <hr className="border-gray-200" />
       </div>
       
       {/* It includes heading - matching typography settings */}
@@ -74,7 +74,7 @@ export default function PricingCard({ name, price, features, icon = 'dollar' }: 
       </p>
       
       {/* Features list with dark gray checkmarks */}
-      <ul className="space-y-2 flex-1">
+      <ul className="space-y-1 flex-1">
         {features.length > 0 ? (
           features.map((feature, idx) => (
             <li key={idx} className="flex items-start gap-2">

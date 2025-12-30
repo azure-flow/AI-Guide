@@ -819,12 +819,6 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     Review
                                 </a>
                                 <a
-                                    href="#related-posts"
-                                    className="block text-gray-700 hover:text-blue-600 py-2 text-sm"
-                                >
-                                    Related Posts
-                                </a>
-                                <a
                                     href="#alternatives"
                                     className="block text-gray-700 hover:text-blue-600 py-2 text-sm"
                                 >
@@ -996,7 +990,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     <PricingSection pricingModels={pricingModels} />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-12 gap-6 mb-5">
+                            <div className="grid grid-cols-12 gap-6 !mb-[40px]">
                                 <div className="col-span-12 lg:-ml-48">
                                     <div className="flex flex-row justify-center items-center">
                                         {meta?.productWebsite && (

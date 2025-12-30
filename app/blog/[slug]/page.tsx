@@ -371,12 +371,6 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
                                                     Review
                                                 </a>
                                                 <a
-                                                    href={`/tool/${toolSlug}#related-posts`}
-                                                    className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
-                                                >
-                                                    Related Posts
-                                                </a>
-                                                <a
                                                     href={`/tool/${toolSlug}#alternatives`}
                                                     className="block text-blue-600 font-medium hover:text-blue-800 py-2 text-sm"
                                                 >
