@@ -861,7 +861,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                     {meta?.boostedProductivity || meta?.lessManualWork ? (
                                         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full h-full flex flex-col">
                                             {meta?.boostedProductivity && (
-                                                <div className="mb-4 pb-4 border-b border-gray-200 flex-1">
+                                                <div className="mb-4 pb-4 border-b border-gray-200 flex-1 flex flex-col justify-center">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Zap className="w-4 h-4 text-yellow-500" />
                                                         <h3 className="text-sm text-gray-900">Boosted Productivity</h3>
@@ -876,7 +876,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                             )}
 
                                             {meta?.lessManualWork && (
-                                                <div className="flex-1">
+                                                <div className="flex-1 flex flex-col justify-center">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Clock className="w-4 h-4 text-gray-600" />
                                                         <h3 className="text-sm text-gray-900">Less Manual Work</h3>
@@ -889,7 +889,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 w-full h-full flex flex-col items-center justify-center text-center text-gray-500 min-h-[180px]">
+                                        <div className="bg-white rounded-xl px-8 py-4 shadow-sm border border-gray-200 w-full h-full flex flex-col items-center justify-center text-center text-gray-500 min-h-[180px]">
                                             <span className="text-base font-medium">
                                                 No productivity details available for this tool yet. Check back soon for
                                                 more insight!
