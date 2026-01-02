@@ -23,7 +23,12 @@ interface Tool {
       };
     };
     keyFindingsRaw?: string;
-    whoIsItFor?: string;
+    jobtype1?: string | null;
+    situation1?: string | null;
+    jobType2?: string | null;
+    situation2?: string | null;
+    jobType3?: string | null;
+    situation3?: string | null;
     pricingModel1?: string | null;
     pricingModel2?: string | null;
     pricingModel3?: string | null;

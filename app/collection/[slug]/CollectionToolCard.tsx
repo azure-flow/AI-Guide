@@ -33,11 +33,6 @@ interface CollectionToolCardProps {
 
 type TabType = 'overview' | 'who-is-it-for' | 'pricing';
 
-interface TargetAudienceItem {
-  title: string;
-  bulletPoints: string[];
-}
-
 interface PricingModel {
   name: string;
   price: string;

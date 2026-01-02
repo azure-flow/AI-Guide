@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { parsePricingModels, getWhoIsItForDisplay } from '@/lib/normalizers';
+import { parsePricingModels, getWhoIsItForDisplay, parseWhoIsItFor } from '@/lib/normalizers';
 
 interface AlternativeCardProps {
   tool: {
@@ -94,7 +94,9 @@ export default function AlternativeCard({ tool }: AlternativeCardProps) {
 
   const logoUrl = tool.aiToolMeta?.logo?.node?.sourceUrl || tool.featuredImage?.node?.sourceUrl;
   const keyFindings = parseKeyFindings(tool.aiToolMeta?.keyFindingsRaw);
-  const whoIsItFor = parseWhoIsItFor(tool.aiToolMeta?.whoIsItFor);
+  // Get array of job types for display
+  const whoIsItForAudiences = parseWhoIsItFor(tool.aiToolMeta);
+  const whoIsItFor = whoIsItForAudiences.map(a => a.title).filter(Boolean);
   const pricing = parsePricing(tool.aiToolMeta);
   const version = tool.aiToolMeta?.latestVersion || '';
   // Get up to 4 tags (like "Marketing", "Coder", etc.)
