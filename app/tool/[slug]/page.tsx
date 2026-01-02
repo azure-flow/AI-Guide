@@ -34,7 +34,7 @@ import UserReviewsCarousel from './UserReviewsCarousel';
 import RelatedPostImage from './RelatedPostImage';
 import TwitterEmbed from './TwitterEmbed';
 import AIToolScrollSection from '../../components/AIToolScrollSection';
-import { normalizeKeyFindings, parsePricingModels, getPricingDisplay } from '@/lib/normalizers';
+import { normalizeKeyFindings, parsePricingModels, getPricingDisplay, parseWhoIsItFor, type TargetAudienceItem } from '@/lib/normalizers';
 import SiteFooter from '@/components/SiteFooter';
 
 // ============================================================================
@@ -107,7 +107,12 @@ interface ToolData {
             seller?: string;
             discussionUrl?: string;
             keyFindingsRaw?: string | string[];
-            whoIsItFor?: string;
+            jobtype1?: string | null;
+            situation1?: string | null;
+            jobType2?: string | null;
+            situation2?: string | null;
+            jobType3?: string | null;
+            situation3?: string | null;
             whoisitforlogo?: Array<{
                 node: {
                     sourceUrl: string;
@@ -267,7 +272,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
             latestVersion: p?.aiToolMeta?.latestVersion,
             latestUpdate: p?.aiToolMeta?.latestUpdate,
             pricing: getPricingDisplay(p?.aiToolMeta),
-            whoIsItFor: p?.aiToolMeta?.whoIsItFor
+            whoIsItForMeta: p?.aiToolMeta
         };
     });
 
@@ -360,18 +365,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
 
     const keyFeatures = parseKeyFeatures(keyFeaturesText);
 
-    type AudienceBullet = {
-        title: string;
-        description?: string;
-    };
-
-    interface TargetAudienceItem {
-        title: string;
-        bulletPoints: AudienceBullet[];
-        logo?: any;
-    }
-
-    // Process target audience from WordPress Textarea field
+    // Process target audience using helper function
     // Format: Each audience section separated by double blank lines
     // First line of each section is the title
     // Each bullet point can have an expansion description on the next line (no blank line between)
@@ -390,70 +384,8 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
     // Professionals
     // Summarize academic readings and journal articles
 
-    const parseTargetAudience = (text: string | null | undefined): TargetAudienceItem[] => {
-        if (!text || text.trim() === '') {
-            return [];
-        }
-
-        // Split by double newlines (blank lines) to separate different audiences
-        const sections = text.split(/\n\s*\n/).filter((section) => section.trim() !== '');
-
-        return sections
-            .map((section) => {
-                const lines = section.split(/\r?\n/).map((line) => line.trim());
-
-                if (lines.length === 0 || lines[0] === '') {
-                    return { title: '', bulletPoints: [] };
-                }
-
-                // First line is the title
-                const title = lines[0];
-
-                // Process remaining lines for bullet points with optional expansions
-                const bulletPoints: AudienceBullet[] = [];
-                let i = 1;
-
-                while (i < lines.length) {
-                    // Skip empty lines (they separate bullet points)
-                    if (lines[i] === '') {
-                        i++;
-                        continue;
-                    }
-
-                    // Current line is a bullet point title
-                    const bulletTitle = lines[i];
-                    let description: string | undefined = undefined;
-
-                    // Check if next line exists and is not empty (it's an expansion description)
-                    if (i + 1 < lines.length && lines[i + 1] !== '') {
-                        description = lines[i + 1];
-                        i += 2; // Skip both the bullet and expansion
-                        // Skip the empty line after expansion if it exists
-                        if (i < lines.length && lines[i] === '') {
-                            i++;
-                        }
-                    } else {
-                        // No expansion, just a bullet point
-                        i++;
-                        // Skip the empty line after bullet if it exists
-                        if (i < lines.length && lines[i] === '') {
-                            i++;
-                        }
-                    }
-
-                    bulletPoints.push({
-                        title: bulletTitle,
-                        ...(description && { description })
-                    });
-                }
-
-                return { title, bulletPoints };
-            })
-            .filter((item) => item.title !== '' && item.bulletPoints.length > 0); // Filter out empty items
-    };
-
-    const targetAudienceRaw = meta?.whoIsItFor;
-    const parsedTargetAudience = parseTargetAudience(targetAudienceRaw);
+    // Use the helper function from normalizers
+    const parsedTargetAudience = parseWhoIsItFor(meta);
     const whoisitforlogoRaw = (meta as any)?.whoisitforlogo;
 
     // Handle different possible structures for whoisitforlogo

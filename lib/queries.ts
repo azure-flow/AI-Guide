@@ -207,7 +207,12 @@ export const TOOLS_BY_TAG_QUERY = `
           pricingModel2
           pricingModel3
           pricingModel4
-          whoIsItFor
+          jobtype1
+          situation1
+          jobType2
+          situation2
+          jobType3
+          situation3
         }
         tags { nodes { name slug } }
       }
@@ -244,7 +249,12 @@ export const POST_BY_SLUG_QUERY = `
         keyFindingsRaw
         youtubeLink
         overview
-        whoIsItFor
+        jobtype1
+        situation1
+        jobType2
+        situation2
+        jobType3
+        situation3
         whoisitforlogo {
           node {
             sourceUrl
@@ -537,7 +547,12 @@ export const TOOLS_BY_MODIFIED_QUERY = `
           pricingModel2
           pricingModel3
           pricingModel4
-          whoIsItFor
+          jobtype1
+          situation1
+          jobType2
+          situation2
+          jobType3
+          situation3
         }
         tags { nodes { name slug } }
       }
@@ -570,7 +585,12 @@ export const TOOLS_BY_DATE_DESC_QUERY = `
           pricingModel2
           pricingModel3
           pricingModel4
-          whoIsItFor
+          jobtype1
+          situation1
+          jobType2
+          situation2
+          jobType3
+          situation3
         }
         tags { nodes { name slug } }
       }
@@ -600,7 +620,12 @@ export const ALL_TOOLS_QUERY = `
           pricingModel2
           pricingModel3
           pricingModel4
-          whoIsItFor
+          jobtype1
+          situation1
+          jobType2
+          situation2
+          jobType3
+          situation3
         }
         tags { nodes { name slug } }
       }

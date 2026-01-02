@@ -8,7 +8,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Star, DollarSign } from 'lucide-react';
-import { parsePricingModels } from '@/lib/normalizers';
+import { parsePricingModels, parseWhoIsItFor, type TargetAudienceItem } from '@/lib/normalizers';
 
 interface Tag {
   name: string;
@@ -26,6 +26,7 @@ interface CollectionToolCardProps {
   tags?: Tag[];
   toolHref: string;
   whoIsItFor?: string | null;
+  whoIsItForMeta?: { jobtype1?: string | null; situation1?: string | null; jobType2?: string | null; situation2?: string | null; jobType3?: string | null; situation3?: string | null } | null;
   pricing?: string | null;
   pricingMeta?: { pricingModel1?: string | null; pricingModel2?: string | null; pricingModel3?: string | null; pricingModel4?: string | null } | null;
 }
@@ -53,6 +54,7 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
   tags = [],
   toolHref,
   whoIsItFor,
+  whoIsItForMeta,
   pricing,
   pricingMeta,
 }) => {
@@ -74,33 +76,13 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
 
   const cleanDescription = description ? stripHtml(description) : '';
 
-  // Parse whoIsItFor data
+  // Parse whoIsItFor data using helper function
   const parsedWhoIsItFor = useMemo((): TargetAudienceItem[] => {
-    if (!whoIsItFor || whoIsItFor.trim() === '') {
+    if (!whoIsItForMeta) {
       return [];
     }
-
-    // Split by double newlines to separate different audiences
-    const sections = whoIsItFor.split(/\n\s*\n/).filter((section) => section.trim() !== '');
-
-    return sections
-      .map((section) => {
-        const lines = section.split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== '');
-
-        if (lines.length === 0 || lines[0] === '') {
-          return { title: '', bulletPoints: [] };
-        }
-
-        // First line is the title (Role name)
-        const title = lines[0];
-
-        // Rest are bullet points (descriptions)
-        const bulletPoints = lines.slice(1).filter((line) => line !== '');
-
-        return { title, bulletPoints };
-      })
-      .filter((item) => item.title !== '' && item.bulletPoints.length > 0);
-  }, [whoIsItFor]);
+    return parseWhoIsItFor(whoIsItForMeta);
+  }, [whoIsItForMeta]);
 
   // Parse pricing data using helper function
   const parsedPricing = useMemo((): PricingModel[] => {
@@ -221,7 +203,7 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
                     <h4 className="text-sm font-semibold text-gray-900 mb-2">Key Finding</h4>
                     <div className="flex flex-wrap gap-3">
                       {keyFindings.slice(0, 10).map((finding, idx) => (
-                        <div key={idx} className="text-sm text-gray-700">
+                        <div key={idx} className="text-sm text-gray-700 px-3 py-1 bg-gray-100 rounded-md">
                           {finding}
                         </div>
                       ))}
@@ -236,13 +218,16 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
                 {parsedWhoIsItFor.length > 0 ? (
                   <div className="grid grid-cols-3 gap-6">
                     {parsedWhoIsItFor.map((audience, idx) => (
-                      <div key={idx} className="flex flex-col">
+                      <div key={idx} className="flex flex-col min-w-[160px]">
                         <h4 className="text-sm font-bold text-gray-900 mb-3">{audience.title}</h4>
                         <div className="space-y-2">
                           {audience.bulletPoints.map((point, pointIdx) => (
-                            <p key={pointIdx} className="text-sm text-gray-600">
-                              {point}
-                            </p>
+                            <div key={pointIdx}>
+                              <p className="text-sm text-gray-600 font-medium">{point.title}</p>
+                              {point.description && (
+                                <p className="text-sm text-gray-500 mt-1">{point.description}</p>
+                              )}
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -257,7 +242,7 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
             {activeTab === 'pricing' && (
               <div className='w-full h-full flex flex-col justify-center items-center'>
                 {parsedPricing.length > 0 ? (
-                  <div className="w-[105%] grid grid-cols-3 gap-6 border-y-[1px] border-gray-200">
+                  <div className="w-[105%] grid grid-cols-4 gap-6 border-y-[1px] border-gray-200">
                     {parsedPricing.map((model, idx) => (
                       <div key={idx} className="flex flex-col px-10 py-6 border-r-[1px] border-gray-200">
                         <div className="flex items-start gap-2">

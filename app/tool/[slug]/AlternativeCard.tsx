@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { parsePricingModels } from '@/lib/normalizers';
+import { parsePricingModels, getWhoIsItForDisplay } from '@/lib/normalizers';
 
 interface AlternativeCardProps {
   tool: {
@@ -80,15 +80,7 @@ export default function AlternativeCard({ tool }: AlternativeCardProps) {
     return [];
   };
 
-  // Parse who is it for (get first audience title)
-  const parseWhoIsItFor = (text: string | null | undefined): string[] => {
-    if (!text || text.trim() === '') return [];
-    const sections = text.split(/\n\s*\n/).filter(Boolean);
-    return sections.slice(0, 4).map(section => {
-      const lines = section.split('\n').filter(Boolean);
-      return lines[0]?.trim() || '';
-    }).filter(Boolean);
-  };
+  // Parse who is it for (get first audience title) using helper function
 
   // Parse pricing (get first pricing model name)
   const parsePricing = (meta: any): string => {

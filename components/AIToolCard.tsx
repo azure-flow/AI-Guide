@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Check, User } from 'lucide-react';
 import CardLinkOverlay from './CardLinkOverlay';
 import { getRelativeTime } from '@/lib/relativeTime';
-import { getPricingDisplay } from '@/lib/normalizers';
+import { getPricingDisplay, getWhoIsItForDisplay, parseWhoIsItFor } from '@/lib/normalizers';
 
 interface Badge {
     name: string;
@@ -30,6 +30,7 @@ interface AIToolCardProps {
     pricing?: string | null;
     pricingMeta?: { pricingModel1?: string | null; pricingModel2?: string | null; pricingModel3?: string | null; pricingModel4?: string | null } | null;
     whoIsItFor?: string | null;
+    whoIsItForMeta?: { jobtype1?: string | null; situation1?: string | null; jobType2?: string | null; situation2?: string | null; jobType3?: string | null; situation3?: string | null } | null;
 }
 
 const DEFAULT_BADGE_CLASS = 'bg-orange-100 text-orange-700 border border-orange-200';
@@ -69,7 +70,8 @@ const AIToolCard: React.FC<AIToolCardProps> = ({
     latestUpdate,
     pricing,
     pricingMeta,
-    whoIsItFor
+    whoIsItFor,
+    whoIsItForMeta
 }) => {
     // Filter out any excludeTagSlugs if specified
     let showTags = tags.filter((b) => !excludeTagSlugs.includes(b.slug));
@@ -85,50 +87,17 @@ const AIToolCard: React.FC<AIToolCardProps> = ({
         ? getPricingDisplay(pricingMeta)
         : (pricing ? getPricingDisplay({ pricingModel1: pricing, pricingModel2: null, pricingModel3: null, pricingModel4: null }) : '');
 
-    // Parse whoIsItFor field from WordPress
-    // Format: Sections separated by blank lines, first line of each section is the category
-    const parseWhoIsItFor = (text: string | null | undefined): string[] => {
-        if (!text || text.trim() === '') return [];
-
-        // Split by double newlines (blank lines) to get sections
-        const sections = text.split(/\n\s*\n/).filter((section) => section.trim() !== '');
-
-        const categories: string[] = [];
-
-        sections.forEach((section, idx) => {
-            // Get the first line of each section
-            const lines = section
-                .split(/\r?\n/)
-                .map((line) => line.trim())
-                .filter((line) => line !== '');
-            if (lines.length > 0) {
-                let category = lines[0];
-                const originalCategory = category;
-
-                // Try to remove "TEST" prefix with optional numbers and whitespace
-                // Match patterns like: TEST1, TEST 1, TEST2Entrepreneurs, TESTSomething
-                const cleaned = category.replace(/^TEST\s*\d*/i, '').trim();
-
-                // If we have content after removing TEST prefix, use it
-                // Otherwise, keep the original (even if it's TEST1, TEST2, etc.)
-                if (cleaned && cleaned.length > 0) {
-                    category = cleaned;
-                }
-
-                // Add if we have a valid category name
-                if (category && category.length > 0 && category.length < 50) {
-                    categories.push(category);
-                }
-            }
-        });
-
-        // Return categories - no minimum required
-        return categories;
+    // Parse whoIsItFor using helper function - get job types
+    const parseWhoIsItForList = (meta: any): string[] => {
+        if (!meta) return [];
+        const audiences = parseWhoIsItFor(meta);
+        return audiences.map(a => a.title).filter(Boolean);
     };
 
-    // ALWAYS use whoIsItFor field if it exists and has content
-    // Only fall back to tags if the field is completely empty/null
-    const whoIsItForList = parseWhoIsItFor(whoIsItFor);
+    // ALWAYS use whoIsItForMeta if it exists, otherwise fall back to whoIsItFor string
+    const whoIsItForList = whoIsItForMeta 
+        ? parseWhoIsItForList(whoIsItForMeta)
+        : (whoIsItFor ? parseWhoIsItForList({ jobtype1: whoIsItFor, situation1: '', jobType2: '', situation2: '', jobType3: '', situation3: '' }) : []);
     const shouldUseTags = whoIsItForList.length === 0 && tags && tags.length > 0;
 
     const hasKeyFindings = keyFindings && keyFindings.length > 0;

@@ -85,7 +85,7 @@ export default function CollectionPageContent({
                     keyFindings={keyFindings}
                     tags={tool.tags?.nodes || []}
                     toolHref={`/tool/${tool.slug}`}
-                    whoIsItFor={tool.aiToolMeta?.whoIsItFor}
+                    whoIsItForMeta={tool.aiToolMeta}
                     pricingMeta={tool.aiToolMeta}
                   />
                 );

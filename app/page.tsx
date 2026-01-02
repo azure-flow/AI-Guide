@@ -405,7 +405,7 @@ export default async function HomePage({
       latestVersion: p?.aiToolMeta?.latestVersion,
       latestUpdate: p?.aiToolMeta?.latestUpdate,
       pricingMeta: p?.aiToolMeta,
-      whoIsItFor: p?.aiToolMeta?.whoIsItFor,
+      whoIsItForMeta: p?.aiToolMeta,
     };
   });
   
@@ -429,7 +429,7 @@ export default async function HomePage({
       latestVersion: p?.aiToolMeta?.latestVersion,
       latestUpdate: p?.aiToolMeta?.latestUpdate,
       pricingMeta: p?.aiToolMeta,
-      whoIsItFor: p?.aiToolMeta?.whoIsItFor,
+      whoIsItForMeta: p?.aiToolMeta,
     };
   });
 

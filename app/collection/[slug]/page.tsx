@@ -71,7 +71,12 @@ interface ToolsData {
                 pricingModel2?: string | null;
                 pricingModel3?: string | null;
                 pricingModel4?: string | null;
-                whoIsItFor?: string;
+                jobtype1?: string | null;
+                situation1?: string | null;
+                jobType2?: string | null;
+                situation2?: string | null;
+                jobType3?: string | null;
+                situation3?: string | null;
             };
             tags?: {
                 nodes: Array<{

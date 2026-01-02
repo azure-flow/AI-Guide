@@ -154,3 +154,82 @@ export function getPricingDisplay(meta: any): string {
 
   return pricingInfo.join(' / ');
 }
+
+/**
+ * Parse whoIsItFor from jobtype1-3 and situation1-3 fields
+ * New format: 
+ * - jobtype1, jobType2, jobType3: Single values like "Student", "Teachers", "Marketers"
+ * - situation1, situation2, situation3: Multiple lines with format "title@content"
+ * Returns array of TargetAudienceItem with title and bulletPoints
+ */
+export interface TargetAudienceItem {
+  title: string;
+  bulletPoints: Array<{ title: string; description?: string }>;
+  logo?: any;
+}
+
+export function parseWhoIsItFor(meta: any): TargetAudienceItem[] {
+  const result: TargetAudienceItem[] = [];
+
+  // Process each of the 3 job type/situation pairs
+  for (let i = 1; i <= 3; i++) {
+    const jobType = meta?.[`jobtype${i}`] || meta?.[`jobType${i}`];
+    const situation = meta?.[`situation${i}`];
+
+    if (!jobType || !situation) {
+      continue;
+    }
+
+    const jobTypeStr = String(jobType).trim();
+    const situationStr = String(situation).trim();
+
+    if (!jobTypeStr || !situationStr) {
+      continue;
+    }
+
+    // Parse situation: each line is "title@content"
+    const lines = situationStr.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+    const bulletPoints: Array<{ title: string; description?: string }> = [];
+
+    lines.forEach(line => {
+      if (line.includes('@')) {
+        // New format: title@content
+        const parts = line.split('@');
+        const title = parts[0]?.trim() || '';
+        const description = parts.slice(1).join('@').trim(); // Join remaining parts in case content also has '@'
+        
+        if (title) {
+          bulletPoints.push({
+            title,
+            ...(description && { description })
+          });
+        }
+      } else {
+        // Old format fallback: treat entire line as title
+        if (line) {
+          bulletPoints.push({ title: line });
+        }
+      }
+    });
+
+    if (jobTypeStr && bulletPoints.length > 0) {
+      result.push({
+        title: jobTypeStr,
+        bulletPoints
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Get whoIsItFor display string (for cards) - returns first job type or empty string
+ */
+export function getWhoIsItForDisplay(meta: any): string {
+  const audiences = parseWhoIsItFor(meta);
+  if (audiences.length > 0) {
+    return audiences[0].title;
+  }
+  return '';
+}

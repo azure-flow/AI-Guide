@@ -30,7 +30,12 @@ interface Tool {
     pricingModel2?: string | null;
     pricingModel3?: string | null;
     pricingModel4?: string | null;
-    whoIsItFor?: string | null;
+    jobtype1?: string | null;
+    situation1?: string | null;
+    jobType2?: string | null;
+    situation2?: string | null;
+    jobType3?: string | null;
+    situation3?: string | null;
   } | null;
   featuredImage?: {
     node: {
@@ -137,7 +142,7 @@ export default function ClientSideTagFilter({ allTools, tags, initialTag = '' }:
         latestVersion: p.aiToolMeta?.latestVersion ?? null,
         latestUpdate: p.aiToolMeta?.latestUpdate ?? null,
         pricingMeta: p.aiToolMeta ?? null,
-        whoIsItFor: p.aiToolMeta?.whoIsItFor ?? null,
+        whoIsItForMeta: p.aiToolMeta ?? null,
       };
     });
   }, [filteredTools]);
