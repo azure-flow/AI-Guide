@@ -26,7 +26,10 @@ interface Tool {
     keyFindingsRaw?: string | null;
     latestVersion?: string | null;
     latestUpdate?: string | null;
-    pricing?: string | null;
+    pricingModel1?: string | null;
+    pricingModel2?: string | null;
+    pricingModel3?: string | null;
+    pricingModel4?: string | null;
     whoIsItFor?: string | null;
   } | null;
   featuredImage?: {

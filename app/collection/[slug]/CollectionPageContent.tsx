@@ -24,7 +24,10 @@ interface Tool {
     };
     keyFindingsRaw?: string;
     whoIsItFor?: string;
-    pricing?: string;
+    pricingModel1?: string | null;
+    pricingModel2?: string | null;
+    pricingModel3?: string | null;
+    pricingModel4?: string | null;
   };
   tags?: {
     nodes: Array<{

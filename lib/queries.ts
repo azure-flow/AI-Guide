@@ -363,7 +363,10 @@ export const RELATED_POSTS_QUERY = `
           }
           keyFindingsRaw
           whoIsItFor
-          pricing
+          pricingModel1
+          pricingModel2
+          pricingModel3
+          pricingModel4
           latestVersion
           publishedDate
           latestUpdate
