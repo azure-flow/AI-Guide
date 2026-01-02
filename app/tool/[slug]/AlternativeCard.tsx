@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { parsePricingModels } from '@/lib/normalizers';
 
 interface AlternativeCardProps {
   tool: {
@@ -47,17 +48,34 @@ interface AlternativeCardProps {
 
 export default function AlternativeCard({ tool }: AlternativeCardProps) {
   // Parse key findings
+  // New format: title@content (each on a line, may or may not have blank lines between)
+  // Old format: title on first line, content on following lines (separated by blank lines)
   const parseKeyFindings = (raw: string | string[] | null | undefined): string[] => {
     if (!raw) return [];
     if (Array.isArray(raw)) return raw.slice(0, 4);
     if (typeof raw === 'string') {
-      const byNewlines = raw.split(/\r?\n/).filter(Boolean);
-      if (byNewlines.length > 1) {
-        return byNewlines.map(s => s.trim()).filter(Boolean).slice(0, 4);
-      } else if (byNewlines[0]?.includes(',')) {
-        return byNewlines[0].split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
-      }
-      return byNewlines.map(s => s.trim()).filter(Boolean).slice(0, 4);
+      // Split by newlines (filter out empty lines)
+      const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+      
+      const titles: string[] = [];
+      
+      lines.forEach(line => {
+        // Check if new format: title@content
+        if (line.includes('@')) {
+          const parts = line.split('@');
+          const title = parts[0]?.trim();
+          if (title) {
+            titles.push(title);
+          }
+        } else {
+          // Old format: treat as title (first line of a section)
+          if (line && !titles.includes(line)) {
+            titles.push(line);
+          }
+        }
+      });
+      
+      return titles.slice(0, 4);
     }
     return [];
   };
@@ -73,12 +91,11 @@ export default function AlternativeCard({ tool }: AlternativeCardProps) {
   };
 
   // Parse pricing (get first pricing model name)
-  const parsePricing = (text: string | null | undefined): string => {
-    if (!text || text.trim() === '') return 'Free';
-    const sections = text.split(/\n\s*\n/).filter(Boolean);
-    if (sections.length > 0) {
-      const lines = sections[0].split('\n').filter(Boolean);
-      return lines[0]?.trim() || 'Free';
+  const parsePricing = (meta: any): string => {
+    if (!meta) return 'Free';
+    const pricingModels = parsePricingModels(meta);
+    if (pricingModels.length > 0) {
+      return pricingModels[0].name || 'Free';
     }
     return 'Free';
   };
@@ -86,7 +103,7 @@ export default function AlternativeCard({ tool }: AlternativeCardProps) {
   const logoUrl = tool.aiToolMeta?.logo?.node?.sourceUrl || tool.featuredImage?.node?.sourceUrl;
   const keyFindings = parseKeyFindings(tool.aiToolMeta?.keyFindingsRaw);
   const whoIsItFor = parseWhoIsItFor(tool.aiToolMeta?.whoIsItFor);
-  const pricing = parsePricing(tool.aiToolMeta?.pricing);
+  const pricing = parsePricing(tool.aiToolMeta);
   const version = tool.aiToolMeta?.latestVersion || '';
   // Get up to 4 tags (like "Marketing", "Coder", etc.)
   const tags = tool.tags?.nodes?.slice(0, 4).map(tag => tag.name) || [];

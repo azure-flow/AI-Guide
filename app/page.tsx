@@ -404,7 +404,7 @@ export default async function HomePage({
       sortDate: p?.aiToolMeta?.dateOfAiTool ?? p?.date ?? null,
       latestVersion: p?.aiToolMeta?.latestVersion,
       latestUpdate: p?.aiToolMeta?.latestUpdate,
-      pricing: p?.aiToolMeta?.pricing,
+      pricingMeta: p?.aiToolMeta,
       whoIsItFor: p?.aiToolMeta?.whoIsItFor,
     };
   });
@@ -428,7 +428,7 @@ export default async function HomePage({
       sortDate: p?.aiToolMeta?.dateOfAiTool ?? p?.date ?? null,
       latestVersion: p?.aiToolMeta?.latestVersion,
       latestUpdate: p?.aiToolMeta?.latestUpdate,
-      pricing: p?.aiToolMeta?.pricing,
+      pricingMeta: p?.aiToolMeta,
       whoIsItFor: p?.aiToolMeta?.whoIsItFor,
     };
   });

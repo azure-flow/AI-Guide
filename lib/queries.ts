@@ -203,7 +203,10 @@ export const TOOLS_BY_TAG_QUERY = `
           dateOfAiTool
           latestVersion
           latestUpdate
-          pricing
+          pricingModel1
+          pricingModel2
+          pricingModel3
+          pricingModel4
           whoIsItFor
         }
         tags { nodes { name slug } }
@@ -248,7 +251,10 @@ export const POST_BY_SLUG_QUERY = `
             altText
           }
         }
-        pricing
+        pricingModel1
+        pricingModel2
+        pricingModel3
+        pricingModel4
         tutorialvid
         tutorialvid1
         tutorialvid2
@@ -524,7 +530,10 @@ export const TOOLS_BY_MODIFIED_QUERY = `
           dateOfAiTool
           latestVersion
           latestUpdate
-          pricing
+          pricingModel1
+          pricingModel2
+          pricingModel3
+          pricingModel4
           whoIsItFor
         }
         tags { nodes { name slug } }
@@ -554,7 +563,10 @@ export const TOOLS_BY_DATE_DESC_QUERY = `
           dateOfAiTool
           latestVersion
           latestUpdate
-          pricing
+          pricingModel1
+          pricingModel2
+          pricingModel3
+          pricingModel4
           whoIsItFor
         }
         tags { nodes { name slug } }
@@ -581,7 +593,10 @@ export const ALL_TOOLS_QUERY = `
           dateOfAiTool
           latestVersion
           latestUpdate
-          pricing
+          pricingModel1
+          pricingModel2
+          pricingModel3
+          pricingModel4
           whoIsItFor
         }
         tags { nodes { name slug } }

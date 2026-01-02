@@ -34,7 +34,7 @@ import UserReviewsCarousel from './UserReviewsCarousel';
 import RelatedPostImage from './RelatedPostImage';
 import TwitterEmbed from './TwitterEmbed';
 import AIToolScrollSection from '../../components/AIToolScrollSection';
-import { normalizeKeyFindings } from '@/lib/normalizers';
+import { normalizeKeyFindings, parsePricingModels, getPricingDisplay } from '@/lib/normalizers';
 import SiteFooter from '@/components/SiteFooter';
 
 // ============================================================================
@@ -114,7 +114,10 @@ interface ToolData {
                     altText?: string;
                 };
             }>;
-            pricing?: string;
+            pricingModel1?: string;
+            pricingModel2?: string;
+            pricingModel3?: string;
+            pricingModel4?: string;
             tutorialvid?: string;
             tutorialvid1?: string;
             tutorialvid2?: string;
@@ -263,7 +266,7 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
             sortDate: p?.aiToolMeta?.dateOfAiTool ?? p?.date ?? null,
             latestVersion: p?.aiToolMeta?.latestVersion,
             latestUpdate: p?.aiToolMeta?.latestUpdate,
-            pricing: p?.aiToolMeta?.pricing,
+            pricing: getPricingDisplay(p?.aiToolMeta),
             whoIsItFor: p?.aiToolMeta?.whoIsItFor
         };
     });
@@ -285,36 +288,63 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
     const category = post.categories?.nodes?.[0]?.name ?? 'Productivity';
 
     // Parse key features from keyFindingsRaw
-    // Format: Each key feature section separated by blank lines (double newline)
-    // First line of each section is the title, subsequent lines are description
+    // New format: title@content (each on a line, may or may not have blank lines between)
+    // Old format: title on first line, content on following lines (separated by blank lines)
     const parseKeyFeatures = (text: string | null | undefined): Array<{ title: string; description: string }> => {
         if (!text || text.trim() === '') {
             return [];
         }
 
-        // Split by double newlines (blank lines) to separate different key features
-        const sections = text.split(/\n\s*\n/).filter((section) => section.trim() !== '');
-
-        return sections
-            .map((section) => {
-                const lines = section
-                    .split(/\r?\n/)
-                    .map((line) => line.trim())
-                    .filter((line) => line !== '');
-
-                if (lines.length === 0) {
-                    return { title: '', description: '' };
+        const features: Array<{ title: string; description: string }> = [];
+        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+        
+        // Track if we're in old format mode (collecting description lines)
+        let currentTitle: string | null = null;
+        let currentDescription: string[] = [];
+        
+        lines.forEach(line => {
+            // Check if new format: title@content
+            if (line.includes('@')) {
+                // Save previous old format entry if exists
+                if (currentTitle !== null) {
+                    features.push({
+                        title: currentTitle,
+                        description: currentDescription.join(' ').trim()
+                    });
+                    currentTitle = null;
+                    currentDescription = [];
                 }
-
-                // First line is the title
-                const title = lines[0];
-
-                // Rest are description lines (join them together)
-                const description = lines.slice(1).join(' ').trim();
-
-                return { title, description };
-            })
-            .filter((item) => item.title !== ''); // Filter out empty items
+                
+                // New format: split by @ to get title and content
+                const parts = line.split('@');
+                const title = parts[0]?.trim() || '';
+                const description = parts.slice(1).join('@').trim(); // Join back in case @ appears in content
+                
+                if (title) {
+                    features.push({ title, description });
+                }
+            } else {
+                // Old format: first line is title, subsequent lines are description
+                if (currentTitle === null) {
+                    // This is a new title
+                    currentTitle = line;
+                    currentDescription = [];
+                } else {
+                    // This is a description line
+                    currentDescription.push(line);
+                }
+            }
+        });
+        
+        // Save last old format entry if exists
+        if (currentTitle !== null) {
+            features.push({
+                title: currentTitle,
+                description: currentDescription.join(' ').trim()
+            });
+        }
+        
+        return features.filter((item) => item.title !== ''); // Filter out empty items
     };
 
     const keyFindingsRawValue: string | string[] | null | undefined =
@@ -491,65 +521,9 @@ export default async function ToolDetailPage({ params }: ToolPageProps) {
                   }
               ];
 
-    // Process pricing models from WordPress Textarea field
-    // Format: Each pricing model section separated by blank lines (double newline)
-    // First line: Pricing model name (e.g., "Free Trial")
-    // Second line: Price (e.g., "$0.00")
-    // Subsequent lines: Features (each line is a feature)
-    // Example:
-    // Free Trial
-    // $0.00
-    // 2 GB File Storage
-    // Summary Views
-    //
-    // Plus Plan
-    // $10.00
-    // 2 GB File Storage
-    // Summary Views
-
-    const parsePricingModels = (
-        text: string | null | undefined
-    ): Array<{ name: string; price: string; features: string[] }> => {
-        if (!text || text.trim() === '') {
-            return [];
-        }
-
-        // Split by double newlines (blank lines) to separate different pricing models
-        const sections = text.split(/\n\s*\n/).filter((section) => section.trim() !== '');
-
-        return sections
-            .map((section) => {
-                const lines = section
-                    .split(/\r?\n/)
-                    .map((line) => line.trim())
-                    .filter((line) => line !== '');
-
-                if (lines.length === 0) {
-                    return { name: '', price: '', features: [] };
-                }
-
-                // First line is the pricing model name
-                const name = lines[0] || '';
-
-                // Second line is the price
-                const price = lines[1] || '$0.00';
-
-                // Rest are features (remove leading dashes if present)
-                const features = lines
-                    .slice(2)
-                    .map((line) => {
-                        // Remove leading dash and whitespace if present
-                        return line.replace(/^-\s*/, '').trim();
-                    })
-                    .filter((feature) => feature !== '');
-
-                return { name, price, features };
-            })
-            .filter((item) => item.name !== ''); // Filter out empty items
-    };
-
-    const pricingRaw = meta?.pricing;
-    const parsedPricingModels = parsePricingModels(pricingRaw);
+    // Process pricing models from WordPress fields (pricingModel1-4)
+    // Use the helper function from normalizers
+    const parsedPricingModels = parsePricingModels(meta);
 
     // Fallback to default if no WordPress data
     const pricingModels =

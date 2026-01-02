@@ -83,7 +83,7 @@ export default function CollectionPageContent({
                     tags={tool.tags?.nodes || []}
                     toolHref={`/tool/${tool.slug}`}
                     whoIsItFor={tool.aiToolMeta?.whoIsItFor}
-                    pricing={tool.aiToolMeta?.pricing}
+                    pricingMeta={tool.aiToolMeta}
                   />
                 );
               })}

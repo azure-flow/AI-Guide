@@ -133,7 +133,7 @@ export default function ClientSideTagFilter({ allTools, tags, initialTag = '' }:
         ctaHref: `/tool/${p.slug}`,
         latestVersion: p.aiToolMeta?.latestVersion ?? null,
         latestUpdate: p.aiToolMeta?.latestUpdate ?? null,
-        pricing: p.aiToolMeta?.pricing ?? null,
+        pricingMeta: p.aiToolMeta ?? null,
         whoIsItFor: p.aiToolMeta?.whoIsItFor ?? null,
       };
     });

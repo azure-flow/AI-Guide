@@ -8,6 +8,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Star, DollarSign } from 'lucide-react';
+import { parsePricingModels } from '@/lib/normalizers';
 
 interface Tag {
   name: string;
@@ -26,6 +27,7 @@ interface CollectionToolCardProps {
   toolHref: string;
   whoIsItFor?: string | null;
   pricing?: string | null;
+  pricingMeta?: { pricingModel1?: string | null; pricingModel2?: string | null; pricingModel3?: string | null; pricingModel4?: string | null } | null;
 }
 
 type TabType = 'overview' | 'who-is-it-for' | 'pricing';
@@ -52,6 +54,7 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
   toolHref,
   whoIsItFor,
   pricing,
+  pricingMeta,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
@@ -99,36 +102,13 @@ const CollectionToolCard: React.FC<CollectionToolCardProps> = ({
       .filter((item) => item.title !== '' && item.bulletPoints.length > 0);
   }, [whoIsItFor]);
 
-  // Parse pricing data
+  // Parse pricing data using helper function
   const parsedPricing = useMemo((): PricingModel[] => {
-    if (!pricing || pricing.trim() === '') {
+    if (!pricingMeta) {
       return [];
     }
-
-    // Split by double newlines to separate different pricing models
-    const sections = pricing.split(/\n\s*\n/).filter((section) => section.trim() !== '');
-
-    return sections
-      .map((section) => {
-        const lines = section.split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== '');
-
-        if (lines.length === 0) {
-          return { name: '', price: '', features: [] };
-        }
-
-        // First line is the pricing model name
-        const name = lines[0] || '';
-
-        // Second line is the price
-        const price = lines[1] || '$0.00';
-
-        // Rest are features
-        const features = lines.slice(2).filter((feature) => feature !== '');
-
-        return { name, price, features };
-      })
-      .filter((item) => item.name !== '');
-  }, [pricing]);
+    return parsePricingModels(pricingMeta);
+  }, [pricingMeta]);
 
   return (
     <article className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 relative">

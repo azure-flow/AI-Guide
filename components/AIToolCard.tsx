@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Check, User } from 'lucide-react';
 import CardLinkOverlay from './CardLinkOverlay';
 import { getRelativeTime } from '@/lib/relativeTime';
+import { getPricingDisplay } from '@/lib/normalizers';
 
 interface Badge {
     name: string;
@@ -27,6 +28,7 @@ interface AIToolCardProps {
     latestVersion?: string | null;
     latestUpdate?: string | null;
     pricing?: string | null;
+    pricingMeta?: { pricingModel1?: string | null; pricingModel2?: string | null; pricingModel3?: string | null; pricingModel4?: string | null } | null;
     whoIsItFor?: string | null;
 }
 
@@ -66,6 +68,7 @@ const AIToolCard: React.FC<AIToolCardProps> = ({
     latestVersion,
     latestUpdate,
     pricing,
+    pricingMeta,
     whoIsItFor
 }) => {
     // Filter out any excludeTagSlugs if specified
@@ -76,54 +79,11 @@ const AIToolCard: React.FC<AIToolCardProps> = ({
     const maxTags = variant === 'compact' ? 3 : 4;
     showTags = showTags.slice(0, maxTags);
 
-    // Parse pricing to extract Free and Paid information
-    const parsePricing = (pricingText: string | null | undefined): string => {
-        if (!pricingText || pricingText.trim() === '') {
-            return '';
-        }
-
-        const sections = pricingText.split(/\n\s*\n/).filter((section) => section.trim() !== '');
-
-        const pricingInfo: string[] = [];
-        let hasFree = false;
-        let hasPaid = false;
-        let lowestPaidPrice = '';
-
-        sections.forEach((section, idx) => {
-            const lines = section
-                .split(/\r?\n/)
-                .map((line) => line.trim())
-                .filter((line) => line !== '');
-            if (lines.length >= 2) {
-                const name = lines[0] || '';
-                const price = lines[1] || '';
-
-                const nameLower = name.toLowerCase();
-                const priceLower = price.toLowerCase();
-
-                // Check for free plans
-                if (nameLower.includes('free') || price === '$0' || price === '$0.00' || priceLower.includes('free')) {
-                    hasFree = true;
-                }
-                // Check for paid plans
-                else if (price && price.startsWith('$') && price !== '$0' && price !== '$0.00') {
-                    hasPaid = true;
-                    // Extract just the price part (e.g., "$20" from "$20/mo")
-                    const priceMatch = price.match(/\$\d+/);
-                    if (priceMatch && (!lowestPaidPrice || priceMatch[0] < lowestPaidPrice)) {
-                        lowestPaidPrice = priceMatch[0];
-                    }
-                }
-            }
-        });
-
-        if (hasFree) pricingInfo.push('Free');
-        if (hasPaid && lowestPaidPrice) pricingInfo.push(`Paid${lowestPaidPrice}-`);
-
-        return pricingInfo.join(' / ');
-    };
-
-    const pricingDisplay = parsePricing(pricing);
+    // Parse pricing using helper function
+    // Support both old format (pricing as string) and new format (pricingMeta object)
+    const pricingDisplay = pricingMeta 
+        ? getPricingDisplay(pricingMeta)
+        : (pricing ? getPricingDisplay({ pricingModel1: pricing, pricingModel2: null, pricingModel3: null, pricingModel4: null }) : '');
 
     // Parse whoIsItFor field from WordPress
     // Format: Sections separated by blank lines, first line of each section is the category
